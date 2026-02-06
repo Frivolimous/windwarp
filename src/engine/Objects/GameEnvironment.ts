@@ -1,20 +1,25 @@
+import { IGameBlock } from "./GameBlock";
+import { GameCanvas } from "./GameCanvas";
 import { PlayerSprite } from "./PlayerSprite";
 
 export class GameEnvironment {
   private wallLeft = 0;
   private wallRight = 1900;
+  
+  public floorHeight = 900;
+  public objects: IGameBlock[] = [];
 
-  constructor(public floorHeight?: number, private objects?: BoundedObject[]) {
+  constructor(public canvas: GameCanvas) {
 
   }
 
-  setupLevel(levelWidth: number, floorHeight: number, objects: BoundedObject[]) {
+  setupLevel(levelWidth: number, floorHeight: number, objects: IGameBlock[]) {
     this.wallRight = levelWidth;
     this.floorHeight = floorHeight;
     this.objects = objects;
   }
 
-  public checkWorld(rect: BoundedObject): WorldResponse {
+  public checkWorld(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
     let response = {
       up: Infinity,
       down: Infinity,
@@ -89,6 +94,14 @@ export class GameEnvironment {
     
     return response;
   }
+
+  public removeObject(obj: IGameBlock) {
+    let index = this.objects.indexOf(obj);
+    if (index !== -1) {
+      this.objects.splice(index, 1);
+      this.canvas.removeObject(obj);
+    }
+  }
 }
 
 export interface WorldResponse {
@@ -96,16 +109,8 @@ export interface WorldResponse {
   up: number;
   left: number;
   right: number;
-  downBlock?: BoundedObject;
-  upBlock?: BoundedObject;
-  leftBlock?: BoundedObject;
-  rightBlock?: BoundedObject;
-}
-
-interface BoundedObject {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  spring?: boolean;
+  downBlock?: IGameBlock;
+  upBlock?: IGameBlock;
+  leftBlock?: IGameBlock;
+  rightBlock?: IGameBlock;
 }

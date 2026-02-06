@@ -1,12 +1,14 @@
 import { JMRect } from '../JMGE/others/JMRect';
 import { JMEventListener } from '../JMGE/events/JMEventListener';
 import { Facade } from '../main';
+import { IGameBlock } from '../engine/Objects/GameBlock';
 
 export const GameEvents = {
   // ticker: Facade.app.ticker,
   WINDOW_RESIZE: new JMEventListener<IResizeEvent>(),
   ACTIVITY_LOG: new JMEventListener<IActivityLog>(),
   APP_LOG: new JMEventListener<IAppLog>(),
+  SWITCH_ACTIVATED: new JMEventListener<IGameBlock>(),
 
   // SPRITE_ADDED: new JMEventListener<ISpriteAdded>(),
   // SPRITE_REMOVED: new JMEventListener<SpriteModel>(),

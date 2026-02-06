@@ -1,6 +1,8 @@
 import { Firework } from "../../JMGE/effects/Firework";
 import { Facade } from "../../main";
+import { GameEvents } from "../../services/GameEvents";
 import { KeyboardControl } from "../../services/KeyboardControl";
+import { GameBlock, IGameBlock } from "../Objects/GameBlock";
 import { GameCamera } from "../Objects/GameCamera";
 import { GameCanvas } from "../Objects/GameCanvas";
 import { GameEnvironment } from "../Objects/GameEnvironment";
@@ -9,34 +11,45 @@ import { PlayerMovement } from "./PlayerMovement";
 
 export class GameControl {
     private playerMovement: PlayerMovement;
-    private gameEnvironment = new GameEnvironment();
+    private gameEnvironment: GameEnvironment;
     private camera: GameCamera;
     private running = true;
     player: PlayerSprite;
 
     constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
+        this.gameEnvironment = new GameEnvironment(canvas);
         this.playerMovement = new PlayerMovement(this.gameEnvironment);
         this.camera = new GameCamera(this.canvas, Facade.worldBounds.width * Facade.scale, Facade.worldBounds.height * Facade.scale);
         
+        GameEvents.SWITCH_ACTIVATED.addListener((block: IGameBlock) => {
+            let subtype = block.subtype;
+            this.canvas.blocks.forEach(obj => {
+                if (obj.config.type === 'door' && obj.config.subtype === subtype) {
+                    obj.shrinkAway();
+                }
+            });
+        });
         this.startSampleGame();
     }
 
     startSampleGame() {
-        let objects: {x: number, y: number, width: number, height: number, spring?: boolean}[] = [
-            {x: 560, y: 840, width: 80, height: 40},
-            {x: 640, y: 800, width: 80, height: 80},
-            {x: 800, y: 720, width: 80, height: 80},
-            {x: 80, y: 800, width: 80, height: 80},
-            {x: 960, y: 640, width: 160, height: 80},
-            {x: 1200, y: 640, width: 160, height: 80},
-            {x: 1360, y: 480, width: 80, height: 80},
-            {x: 1040, y: 400, width: 240, height: 80},
-            {x: 640, y: 400, width: 240, height: 80},
-            {x: 240, y: 240, width: 160, height: 80},
-            {x: 1600, y: 240, width: 80, height: 560},
-            {x: 1840, y: 240, width: 80, height: 640},
-            {x: 1760, y: 860, width: 80, height: 20, spring: true},
-            {x: 0, y: 860, width: 80, height: 20, spring: true},
+        let objects: IGameBlock[] = [
+            {x: 560, y: 840, width: 80, height: 40, type: 'normal'},
+            {x: 640, y: 800, width: 80, height: 80, type: 'normal'},
+            {x: 800, y: 720, width: 80, height: 80, type: 'normal'},
+            {x: 80, y: 800, width: 80, height: 80, type: 'normal'},
+            {x: 960, y: 640, width: 160, height: 80, type: 'normal'},
+            {x: 1200, y: 640, width: 160, height: 80, type: 'normal'},
+            {x: 1360, y: 480, width: 80, height: 80, type: 'normal'},
+            {x: 1040, y: 400, width: 240, height: 80, type: 'normal'},
+            {x: 640, y: 400, width: 240, height: 80, type: 'normal'},
+            {x: 240, y: 240, width: 160, height: 80, type: 'normal'},
+            {x: 1600, y: 0, width: 80, height: 800, type: 'normal'},
+            {x: 1840, y: 240, width: 80, height: 640, type: 'normal'},
+            {x: 1760, y: 860, width: 80, height: 20, type: 'spring'},
+            {x: 0, y: 860, width: 80, height: 20, type: 'spring'},
+            {x: 1620, y: 800, width: 40, height: 80, type: 'door', subtype: 'a'},
+            {x: 260, y: 220, width: 80, height: 20, type: 'switch', subtype: 'a'},  
         ];
 
         objects.forEach(obj => {
@@ -74,5 +87,11 @@ export class GameControl {
 
         this.player.updateView();
         this.camera.update(this.player);
+
+        for (let i = this.canvas.blocks.length - 1; i >= 0; i--) {
+            if (this.canvas.blocks[i].destroyed) {
+                this.gameEnvironment.removeObject(this.canvas.blocks[i].config);
+            }
+        }
     }
 }

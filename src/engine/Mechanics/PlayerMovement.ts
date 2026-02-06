@@ -32,6 +32,10 @@ export class PlayerMovement {
   private landTimeBase = 10;
   private landTimeVMult = 1;
 
+  private maxDoubleJumps = Infinity;
+  // private maxDoubleJumps = 1;
+  private maxWallGrabs = Infinity;
+
   private player: PlayerSprite;
   constructor(private world: GameEnvironment) {
 
@@ -283,8 +287,8 @@ export class PlayerMovement {
       }
 
       player.setGroundState('walking');
-      player.doubleJumpsRemaining = player.maxDoubleJumps;
-      player.wallGrabsRemaining = player.maxWallGrabs;
+      player.doubleJumpsRemaining = this.maxDoubleJumps;
+      player.wallGrabsRemaining = this.maxWallGrabs;
       player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
       
       return;
@@ -389,10 +393,19 @@ export class PlayerMovement {
     if (worldCollision.down > 0) {
       player.setGroundState('falling');
     } else {
-      if (worldCollision.down === 0 && worldCollision.downBlock && worldCollision.downBlock.spring) {
-        player.vY = this.jumpSpeed * 2;
-        player.bounceTime = this.bounceTime;
-        player.setGroundState('ascending');
+      if (worldCollision.down === 0 && worldCollision.downBlock) {
+        if (worldCollision.downBlock.type === 'switch') {
+          let block = this.world.canvas.blocks.find(obj => obj.config === worldCollision.downBlock);
+          if (block.destroyed || block.animating) return;
+          
+          block.shrinkAway(() => {
+            GameEvents.SWITCH_ACTIVATED.publish(worldCollision.downBlock);
+          });
+        } else if (worldCollision.downBlock.type === 'spring') {
+          player.vY = this.jumpSpeed * 2;
+          player.bounceTime = this.bounceTime;
+          player.setGroundState('ascending');
+        }
       }
     }
   }

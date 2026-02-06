@@ -13,10 +13,8 @@ export class PlayerSprite extends PIXI.Graphics {
     };
 
     public doubleJumpsRemaining = 1;
-    public maxDoubleJumps = Infinity;
 
-    public wallGrabsRemaining = 10;
-    public maxWallGrabs = 10;
+    public wallGrabsRemaining = 1;
 
     public groundState: GroundState = 'idle';
     public standState: 'standing' | 'crouching' = 'standing';
@@ -143,10 +141,6 @@ export class PlayerSprite extends PIXI.Graphics {
         let dStretch = this.desiredVStretch - stretch;
         this.view.scale.y = stretch + dStretch * this.animationSpeed;
         this.view.y = this.collider.height - this.view.scale.y * this.collider.height;
-
-        // this.view.skew.set(this.vX / -100, 0);
-        // this.view.x = this.vX / 100;
-        // this.view.scale.y = Math.abs(1 + Math.min(Math.abs(this.vY) / 100, 0.2));
     }
 }
 
