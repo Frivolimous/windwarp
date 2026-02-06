@@ -86,7 +86,7 @@ export class Firework {
   }
 }
 
-interface IExplosion {
+export interface IExplosion {
   x: number;
   y: number;
   offRadius?: number;

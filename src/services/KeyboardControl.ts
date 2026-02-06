@@ -21,8 +21,9 @@ export class KeyboardControl {
   }
 
   public onKeyDown = (e: KeyboardEvent) => {
+    let key = e.key.toLowerCase();
     this.hotkeys.forEach(hotkey => {
-      if (e.key === hotkey.key && hotkey.onDown) {
+      if (hotkey.keys.includes(key) && hotkey.onDown) {
         hotkey.onDown();
       }
     });
@@ -31,8 +32,9 @@ export class KeyboardControl {
   }
 
   public onKeyUp = (e: KeyboardEvent) => {
+    let key = e.key.toLowerCase();
     this.hotkeys.forEach(hotkey => {
-      if (e.key === hotkey.key && hotkey.onUp) {
+      if (hotkey.keys.includes(key) && hotkey.onUp) {
         hotkey.onUp();
       }
     });
@@ -42,7 +44,7 @@ export class KeyboardControl {
 }
 
 export interface IHotkey {
-  key: string;
+  keys: string[];
   onDown: Function;
   onUp?: Function;
 }

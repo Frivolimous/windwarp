@@ -33,4 +33,4 @@ export interface IAppLog {
 
 export type AppEvent = 'INITIALIZE' | 'SAVE' | 'NAVIGATE';
 
-export type ActivitySlug = 'PLAYER_STATE';
+export type ActivitySlug = 'PLAYER_STATE' | 'STAND_STATE' | 'VELOCITY';
