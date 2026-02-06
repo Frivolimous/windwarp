@@ -17,6 +17,9 @@ export const Facade = new class {
   public control: GameControl;
   public keyboard: KeyboardControl;
 
+  public worldBounds = new PIXI.Rectangle(0, 0, 1900, 1200);
+  public scale = 0.5;
+
   //public saveManager
 
   constructor() {
@@ -32,8 +35,8 @@ export const Facade = new class {
     this.app = new PIXI.Application();
 
     await this.app.init({
-      width: 1900/4,
-      height: 1200/4,
+      width: this.worldBounds.width * this.scale,
+      height: this.worldBounds.height * this.scale,
       backgroundColor: 0x1e1e1e
     });
     let holder = document.getElementById('canvas-holder');
@@ -50,7 +53,7 @@ export const Facade = new class {
 
   init() {
     this.keyboard = new KeyboardControl();
-    this.canvas = new GameCanvas(1900, 1200, 1/4);
+    this.canvas = new GameCanvas(this.worldBounds.width, this.worldBounds.height, this.scale);
     this.control = new GameControl(this.canvas, this.keyboard);
     this.app.ticker.add(this.control.onTick);
 
@@ -58,18 +61,3 @@ export const Facade = new class {
     GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Setup Complete'});
   }
 }
-
-
-// // test object
-// const box = new PIXI.Graphics();
-// box.rect(0, 0, 50, 50);
-// box.fill(0xff3366);
-// box.x = 100;
-// box.y = 100;
-
-// app.stage.addChild(box);
-
-// // minimal loop
-// app.ticker.add(() => {
-//   box.x += 1;
-// });
