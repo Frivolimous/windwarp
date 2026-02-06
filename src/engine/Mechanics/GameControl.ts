@@ -50,7 +50,7 @@ export class GameControl {
         this.player.x = 100;
         this.player.y = 800;
         this.playerMovement.setPlayer(this.player);
-        this.canvas.addChild(this.player);
+        this.canvas.addPlayer(this.player);
         this.canvas.addObjects(objects);
         this.setupKeys();
         this.canvas.addEventListener('mousedown', e => {

@@ -8,6 +8,7 @@ import { FontLoader } from "./services/FontLoader";
 import { Fonts } from "./data/Fonts";
 import { GameControl } from "./engine/Mechanics/GameControl";
 import { KeyboardControl } from "./services/KeyboardControl";
+import { TextureCache } from "./services/TextureCache";
 
 export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 
@@ -44,7 +45,9 @@ export const Facade = new class {
     
     let reporting = document.getElementById('debug-reporting') as HTMLDivElement;
     Debug.initialize(this.app, reporting);
-    GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Primary Setup'})
+    GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Primary Setup'});
+
+    TextureCache.initialize(this.app);
     
     // await FontLoader.load(_.map(Fonts));
 

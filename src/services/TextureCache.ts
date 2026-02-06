@@ -98,9 +98,9 @@ function createGraphicTextures() {
     let graphic = new PIXI.Graphics();
     for (let i = 5; i <= 30; i += 5) {
       graphic.clear()
-        .lineStyle(2, 0xffffff)
-        .beginFill(0x333333);
-      graphic.drawCircle(0, 0, i);
+      graphic.setStrokeStyle({ width: 2, color: 0xffffff });
+      graphic.circle(0, 0, i);
+      graphic.fill(0x333333);
       TextureCache.addTextureFromNodeGraphic('circle', i, graphic);
     }
 
@@ -124,35 +124,28 @@ function createGraphicTextures() {
 
     for (let i = 0; i < polygons.length; i++) {
       for (let j = 5; j <= 30; j += 5) {
-        graphic.clear()
-        .lineStyle(2, 0xffffff)
-        .beginFill(0x333333);
+        graphic.clear();
+        graphic.setStrokeStyle({ width: 2, color: 0xffffff });
+        graphic.poly(transformPolygon(polygons[i], j));
+        graphic.fill(0x333333);
 
-        graphic.drawPolygon(transformPolygon(polygons[i], j));
         TextureCache.addTextureFromNodeGraphic(polyNames[i], j, graphic);
       }
     }
 
-    graphic.clear().beginFill(0xffffff)
-      .drawCircle(0, 0, 4);
+    graphic.clear().circle(0, 0, 4).fill(0xffffff);
     TextureCache.addTextureFromGraphic('crawler', graphic);
-    graphic.clear().beginFill(0xeeeeee)
-      .drawCircle(0, 0, 5);
+    graphic.clear().circle(0, 0, 5).fill(0xeeeeee);
     TextureCache.addTextureFromGraphic('chieftain', graphic);
-    graphic.clear().beginFill(0xffffff)
-      .drawCircle(0, 0, 4)
-      .beginFill(0xcccccc)
-      .moveTo(0, -6).lineTo(-6, -1).lineTo(6, -1);
-      // .drawRect(-3, -3, 6, 6);
+    graphic.clear().circle(0, 0, 4).fill(0xffffff);
+    graphic.moveTo(0, -6).lineTo(-6, -1).lineTo(6, -1).fill(0xcccccc);
     TextureCache.addTextureFromGraphic('shaman', graphic);
 
-    graphic.clear().beginFill(0xffffff)
-      .drawRect(0, 0, 2, 2);
+    graphic.clear().rect(0, 0, 2, 2).fill(0xffffff);
     TextureCache.addTextureFromGraphic('crawler-power', graphic);
 
     graphic = new PIXI.Graphics();
-    graphic.beginFill(0xffffff);
-    graphic.drawCircle(0, 0, 5);
+    graphic.circle(0, 0, 5).fill(0xffffff);
     TextureCache.addTextureFromGraphic('firework', graphic);
 }
 

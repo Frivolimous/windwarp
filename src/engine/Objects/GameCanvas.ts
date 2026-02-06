@@ -1,28 +1,46 @@
 import * as PIXI from "pixi.js";
+import { GameBlock } from "./GameBlock";
 
-export class GameCanvas extends PIXI.Graphics {
+export class GameCanvas extends PIXI.Container {
+    public static BACKGROUND = 0;
+    public static OBJECTS = 1;
+    public static PLAYER = 2;
+    public static EFFECTS = 3;
+    public static UI = 4;
+
+    blocks: GameBlock[] = [];
+    background: PIXI.Graphics = new PIXI.Graphics();
+    layers: PIXI.Container[] = [
+        this.background,
+        new PIXI.Container(),
+        new PIXI.Container(),
+        new PIXI.Container(),
+        new PIXI.Container(),
+    ];
 
     constructor(public boundWidth: number, public boundHeight: number, scale: number) {
         super();
 
-        this.rect(0, 0, boundWidth, boundHeight);
-        this.fill(0x3366ff);
+        this.layers.forEach(layer => this.addChild(layer));
+        
+        this.background.rect(0, 0, boundWidth, boundHeight);
+        this.background.fill(0x3366ff);
 
-        this.rect(0, 900, boundWidth, boundHeight - 900);
-        this.fill(0x33ff66);
+        this.background.rect(0, 900, boundWidth, boundHeight - 900);
+        this.background.fill(0x33ff66);
 
         this.scale.set(scale, scale);
         this.eventMode = 'dynamic';
     }
 
     resetBounds(width: number, height: number, floorHeight: number) {
-        this.clear();
+        this.background.clear();
         
-        this.rect(0, 0, width, height);
-        this.fill(0x3366ff);
+        this.background.rect(0, 0, width, height);
+        this.background.fill(0x3366ff);
 
-        this.rect(0, floorHeight, width, height - floorHeight);
-        this.fill(0x33ff66);
+        this.background.rect(0, floorHeight, width, height - floorHeight);
+        this.background.fill(0x33ff66);
 
         this.boundWidth = width;
         this.boundHeight = height;
@@ -30,12 +48,13 @@ export class GameCanvas extends PIXI.Graphics {
 
     addObjects(objects: {x: number, y: number, width: number, height: number, spring?: boolean}[]) {
         objects.forEach(obj => {
-            this.rect(obj.x, obj.y, obj.width, obj.height);
-            if (obj.spring) {
-                this.fill(0xffff66);
-            } else {
-                this.fill(0x11cc33);
-            }
-        })
+            let block = new GameBlock(obj.x, obj.y, obj.width, obj.height, obj.spring ? 0xffff66 : 0x11cc33);
+            this.blocks.push(block);
+            this.layers[GameCanvas.OBJECTS].addChild(block);
+        });
+    }
+
+    addPlayer(player: PIXI.Container) {
+        this.layers[GameCanvas.PLAYER].addChild(player);
     }
 }
