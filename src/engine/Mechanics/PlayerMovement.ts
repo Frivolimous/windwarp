@@ -49,7 +49,7 @@ export class PlayerMovement {
   public playerTick = (player: PlayerSprite) => {
     if (!player) return;
 
-    let worldCollision = this.world.checkWorld(player.getCollider());
+    let worldCollision = this.world.checkWorld(player.getCollider(), player.vX, player.vY);
 
     switch(this.player.groundState) {
       case 'idle': this.tickIdle(player, worldCollision); break;
@@ -144,7 +144,7 @@ export class PlayerMovement {
     
     player.x += player.vX;
     if (worldCollision.left < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider());
+      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
       if (topCollision.left > 0 && player.vX <= 0) {
         player.vX = 0;
         player.vY = 0;
@@ -162,7 +162,7 @@ export class PlayerMovement {
     }
 
     if (worldCollision.right < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider());
+      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
       if (topCollision.right > 0 && player.vX >= 0) {
         player.vX = 0;
         player.vY = 0;
@@ -226,8 +226,24 @@ export class PlayerMovement {
       GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'standing'})
     }
 
+    if (worldCollision.down <= 0 && (player.groundState === 'falling' || player.groundState === 'diving')) {
+      player.y += worldCollision.down - player.vY;
+      player.vY = 0;
+      if (player.groundState === 'diving') {
+        player.standState = 'crouching';
+        GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'crouching'});
+      }
+
+      player.setGroundState('walking');
+      player.doubleJumpsRemaining = this.maxDoubleJumps;
+      player.wallGrabsRemaining = this.maxWallGrabs;
+      player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
+      
+      return;
+    }
+
     if (worldCollision.left < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider());
+      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
       if (topCollision.left > 0 && player.vX <= 0) {
         player.vX = 0;
         player.vY = 0;
@@ -247,7 +263,7 @@ export class PlayerMovement {
     }
 
     if (worldCollision.right < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider());
+      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
       if (topCollision.right > 0 && player.vX >= 0) {
         player.vX = 0;
         player.vY = 0;
@@ -276,22 +292,6 @@ export class PlayerMovement {
 
     if (player.groundState === 'ascending' && player.vY > 0) {
       player.setGroundState('falling');
-    }
-
-    if (worldCollision.down <= 0 && (player.groundState === 'falling' || player.groundState === 'diving')) {
-      player.y += worldCollision.down - player.vY;
-      player.vY = 0;
-      if (player.groundState === 'diving') {
-        player.standState = 'crouching';
-        GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'crouching'});
-      }
-
-      player.setGroundState('walking');
-      player.doubleJumpsRemaining = this.maxDoubleJumps;
-      player.wallGrabsRemaining = this.maxWallGrabs;
-      player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
-      
-      return;
     }
   }
 

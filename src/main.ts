@@ -9,6 +9,7 @@ import { Fonts } from "./data/Fonts";
 import { GameControl } from "./engine/Mechanics/GameControl";
 import { KeyboardControl } from "./services/KeyboardControl";
 import { TextureCache } from "./services/TextureCache";
+import { LevelLoader } from "./services/LevelLoader";
 
 export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 
@@ -48,10 +49,10 @@ export const Facade = new class {
     GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Primary Setup'});
 
     TextureCache.initialize(this.app);
-    
+
     // await FontLoader.load(_.map(Fonts));
 
-    this.init();
+    LevelLoader.initialize(() => this.init());    
   }
 
   init() {

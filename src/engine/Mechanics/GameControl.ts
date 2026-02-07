@@ -2,7 +2,8 @@ import { Firework } from "../../JMGE/effects/Firework";
 import { Facade } from "../../main";
 import { GameEvents } from "../../services/GameEvents";
 import { KeyboardControl } from "../../services/KeyboardControl";
-import { GameBlock, IGameBlock } from "../Objects/GameBlock";
+import { LevelLoader } from "../../services/LevelLoader";
+import { IGameBlock } from "../Objects/GameBlock";
 import { GameCamera } from "../Objects/GameCamera";
 import { GameCanvas } from "../Objects/GameCanvas";
 import { GameEnvironment } from "../Objects/GameEnvironment";
@@ -20,7 +21,12 @@ export class GameControl {
         this.gameEnvironment = new GameEnvironment(canvas);
         this.playerMovement = new PlayerMovement(this.gameEnvironment);
         this.camera = new GameCamera(this.canvas, Facade.worldBounds.width * Facade.scale, Facade.worldBounds.height * Facade.scale);
-        
+        this.player = new PlayerSprite(15, 60);
+        this.playerMovement.setPlayer(this.player);
+        this.canvas.addPlayer(this.player);
+
+        this.setupKeys();
+
         GameEvents.SWITCH_ACTIVATED.addListener((block: IGameBlock) => {
             let subtype = block.subtype;
             this.canvas.blocks.forEach(obj => {
@@ -29,47 +35,23 @@ export class GameControl {
                 }
             });
         });
-        this.startSampleGame();
-    }
 
-    startSampleGame() {
-        let objects: IGameBlock[] = [
-            {x: 560, y: 840, width: 80, height: 40, type: 'normal'},
-            {x: 640, y: 800, width: 80, height: 80, type: 'normal'},
-            {x: 800, y: 720, width: 80, height: 80, type: 'normal'},
-            {x: 80, y: 800, width: 80, height: 80, type: 'normal'},
-            {x: 960, y: 640, width: 160, height: 80, type: 'normal'},
-            {x: 1200, y: 640, width: 160, height: 80, type: 'normal'},
-            {x: 1360, y: 480, width: 80, height: 80, type: 'normal'},
-            {x: 1040, y: 400, width: 240, height: 80, type: 'normal'},
-            {x: 640, y: 400, width: 240, height: 80, type: 'normal'},
-            {x: 240, y: 240, width: 160, height: 80, type: 'normal'},
-            {x: 1600, y: 0, width: 80, height: 800, type: 'normal'},
-            {x: 1840, y: 240, width: 80, height: 640, type: 'normal'},
-            {x: 1760, y: 860, width: 80, height: 20, type: 'spring'},
-            {x: 0, y: 860, width: 80, height: 20, type: 'spring'},
-            {x: 1620, y: 800, width: 40, height: 80, type: 'door', subtype: 'a'},
-            {x: 260, y: 220, width: 80, height: 20, type: 'switch', subtype: 'a'},  
-        ];
-
-        objects.forEach(obj => {
-            obj.y += 100;
-        });
-
-        //   public worldBounds = new PIXI.Rectangle(0, 0, 1900, 1200);
-        this.gameEnvironment.setupLevel(3000, 980, objects);
-        this.canvas.resetBounds(3000, 1300, this.gameEnvironment.floorHeight);
-        this.player = new PlayerSprite(15, 60);
-        this.player.x = 100;
-        this.player.y = 800;
-        this.playerMovement.setPlayer(this.player);
-        this.canvas.addPlayer(this.player);
-        this.canvas.addObjects(objects);
-        this.setupKeys();
         this.canvas.addEventListener('mousedown', e => {
             let position = e.getLocalPosition(this.canvas);
             Firework.makeExplosion(this.canvas, {x: position.x, y: position.y});
         });
+
+        this.loadLevel(2);
+    }
+
+    loadLevel(i: number) {
+        let data = LevelLoader.levelData[i];
+
+        this.gameEnvironment.setupLevel(data.width, data.height, data.blocks);
+        this.canvas.resetBounds(data.width, data.height, data.height);
+        this.player.position.set(data.startingPosition.x, data.startingPosition.y);
+
+        this.canvas.addObjects(data.blocks);
     }
 
     setupKeys() {
@@ -78,7 +60,6 @@ export class GameControl {
         this.keyboard.addKey({keys: ['s', 'arrowdown'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false});
         this.keyboard.addKey({keys: ['d', 'arrowright'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false});
         this.keyboard.addKey({keys: ['p'], onDown: () => this.running = !this.running });
-        
     }
 
     onTick = () => {

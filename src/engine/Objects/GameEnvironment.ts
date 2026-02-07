@@ -19,7 +19,7 @@ export class GameEnvironment {
     this.objects = objects;
   }
 
-  public checkWorld(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+  public checkWorld(rect: {x: number, y: number, width: number, height: number}, vX: number, vY: number): WorldResponse {
     let response = {
       up: Infinity,
       down: Infinity,

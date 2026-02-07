@@ -34,6 +34,7 @@ export class GameCanvas extends PIXI.Container {
   }
 
   resetBounds(width: number, height: number, floorHeight: number) {
+    this.blocks = [];
     this.background.clear();
 
     this.background.rect(0, 0, width, height);

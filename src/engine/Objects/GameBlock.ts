@@ -9,6 +9,7 @@ export class GameBlock extends PIXI.Graphics {
         this.rect(0, 0, config.width, config.height);
         this.position.set(config.x, config.y);
         this.fill(BlockColors[config.type]);
+        // this.fill(Math.random() * 0xffffff);
     }
 
     shrinkAway(then?: () => void) {
@@ -34,6 +35,7 @@ const BlockColors: Record<GameBlockType, number> = {
     breakable: 0x00aa22,
     switch: 0x44eeff,
     door: 0x00aaaa,
+    player: 0xff0000,
 };
 
 export interface IGameBlock {
@@ -45,4 +47,4 @@ export interface IGameBlock {
     subtype?: string;
 }
 
-export type GameBlockType = "normal" | "spring" | "breakable" | "switch" | "door";
+export type GameBlockType = "normal" | "spring" | "breakable" | "switch" | "door" | "player";
