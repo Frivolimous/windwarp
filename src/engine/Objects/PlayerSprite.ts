@@ -3,13 +3,14 @@ import { GameEvents } from "../../services/GameEvents";
 import { Firework, IExplosion } from "../../JMGE/effects/Firework";
 import _ from "lodash";
 
-export class PlayerSprite extends PIXI.Graphics {
+export class PlayerSprite extends PIXI.Container {
     public keys = {
         down: false,
         up: false,
         left: false,
         right: false,
         holdUp: false,
+        jetpack: false,
     };
 
     public doubleJumpsRemaining = 1;
@@ -51,6 +52,10 @@ export class PlayerSprite extends PIXI.Graphics {
         this.drawPlayer();
     }
 
+    getMidPoint() {
+        return new PIXI.Point(this.x + this.collider.width / 2, this.y + this.collider.height / 2);
+    }
+
     getFootPoint() {
         return new PIXI.Point(this.x + this.collider.width / 2, this.y + this.collider.height);
     }
@@ -73,6 +78,9 @@ export class PlayerSprite extends PIXI.Graphics {
     }
 
     public getCollider() {
+        if (this.standState === 'crouching') {
+            return new PIXI.Rectangle(this.x, this.y + this.collider.height / 2, this.collider.width, this.collider.height / 2);
+        }
         return new PIXI.Rectangle(this.x, this.y, this.collider.width, this.collider.height);
     }
 
@@ -91,6 +99,10 @@ export class PlayerSprite extends PIXI.Graphics {
 
                 Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
             }
+        }
+
+        if (this.groundState === 'jetpacking') {
+            Firework.makeExplosion(this.parent, _.defaults(this.getMidPoint(), {count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2}));
         }
         
         if (this.groundState === 'wall-grab-left' || this.groundState === 'wall-grab-right') {
@@ -158,4 +170,4 @@ const STEP_PARTICLE: IExplosion = {
 }
 
 export type GroundState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'rolling' |
-    'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right';
+    'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking';

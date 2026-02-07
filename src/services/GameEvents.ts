@@ -9,6 +9,7 @@ export const GameEvents = {
   ACTIVITY_LOG: new JMEventListener<IActivityLog>(),
   APP_LOG: new JMEventListener<IAppLog>(),
   SWITCH_ACTIVATED: new JMEventListener<IGameBlock>(),
+  LEVEL_COMPLETE: new JMEventListener(),
 
   // SPRITE_ADDED: new JMEventListener<ISpriteAdded>(),
   // SPRITE_REMOVED: new JMEventListener<SpriteModel>(),

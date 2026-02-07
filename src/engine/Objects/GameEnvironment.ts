@@ -1,4 +1,5 @@
-import { IGameBlock } from "./GameBlock";
+import { ILevelData } from "../../services/LevelLoader";
+import { GameBlock, IGameBlock } from "./GameBlock";
 import { GameCanvas } from "./GameCanvas";
 import { PlayerSprite } from "./PlayerSprite";
 
@@ -9,14 +10,17 @@ export class GameEnvironment {
   public floorHeight = 900;
   public objects: IGameBlock[] = [];
 
+  public data: ILevelData;
+
   constructor(public canvas: GameCanvas) {
 
   }
 
-  setupLevel(levelWidth: number, floorHeight: number, objects: IGameBlock[]) {
-    this.wallRight = levelWidth;
-    this.floorHeight = floorHeight;
-    this.objects = objects;
+  setupLevel(data: ILevelData) { 
+    this.data = data; 
+    this.wallRight = data.width;
+    this.floorHeight = data.height;
+    this.objects = data.blocks;
   }
 
   public checkWorld(rect: {x: number, y: number, width: number, height: number}, vX: number, vY: number): WorldResponse {
@@ -35,6 +39,8 @@ export class GameEnvironment {
     response.right = this.wallRight - rect.x - rect.width;
 
     this.objects.forEach(obj => {
+      if (obj.type === 'ghost') return;
+      
       let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
       let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
 
@@ -101,6 +107,10 @@ export class GameEnvironment {
       this.objects.splice(index, 1);
       this.canvas.removeObject(obj);
     }
+  }
+
+  public getObject(obj: IGameBlock): GameBlock {
+    return this.canvas.blocks.find(o => o.config === obj);
   }
 }
 

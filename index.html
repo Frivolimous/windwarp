@@ -5,29 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Windwarp</title>
     <style>
-      html, body {
-        overscroll-behavior: none;
-        touch-action: none;
-      }
-
-      body {
-        position: fixed;
-        inset: 0;
-      }
-
       #debug-reporting {
         background-color: #eee;
         width: 50%;
       }
-      #canvas-holder, .canvas {
-        display: block;
-      }
 
+      #import-area {
+        background-color: #dfd;
+      }
     </style>
   </head>
   <body>
     <div id="canvas-holder"></div>
     <div id="debug-reporting">TEST</div>
+    <div id="import-area">Import a BITMAP FILE to load your own level!<br>
+      <input id="level-select" type="file" accept=".bmp"><br><br>
+      1. Each Pixel = 1 tile (40 pixels)<br>
+      2. The following colors are acceptable:<br>
+        '0,255,0': 'normal',<br>
+        '255,255,0': 'spring',<br>
+        '255,170,0': 'exploding',<br>
+        '255,0,0': 'player',<br>
+        '255,255,255': 'goal',<br>
+        '0,0,0': 'ghost',<br>
+        '0,255,255': 'checkpoint',<br>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

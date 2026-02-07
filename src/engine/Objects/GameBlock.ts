@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { JMTween } from "../../JMGE/JMTween";
+import { Firework } from "../../JMGE/effects/Firework";
 
 export class GameBlock extends PIXI.Graphics {
     public animating = false;
@@ -9,11 +10,16 @@ export class GameBlock extends PIXI.Graphics {
         this.rect(0, 0, config.width, config.height);
         this.position.set(config.x, config.y);
         this.fill(BlockColors[config.type]);
-        // this.fill(Math.random() * 0xffffff);
+    }
+
+    randomTint() {
+        this.tint = Math.random() * 0xffffff;
     }
 
     shrinkAway(then?: () => void) {
         if (this.animating) return;
+        if (this.destroyed) return;
+
         this.animating = true;
         let oHeight = this.config.height;
         let oY = this.config.y;
@@ -27,15 +33,28 @@ export class GameBlock extends PIXI.Graphics {
             then && then();
         }).start();
     }
+
+    explode() {
+        if (this.animating) return;
+        if (this.destroyed) return;
+        
+        this.animating = true;
+        this.destroyed = true;
+        // , {color: BlockColors[this.config.type], count: 20, scale: 0.5}
+        Firework.makeExplosion(this.parent, {x: this.x + this.config.width / 2, y: this.y + this.config.height / 2, tint: BlockColors[this.config.type], count: 20});
+    }
 }
 
 const BlockColors: Record<GameBlockType, number> = {
     normal: 0x11cc33,
     spring: 0xffff66,
-    breakable: 0x00aa22,
+    exploding: 0xff6633,
     switch: 0x44eeff,
     door: 0x00aaaa,
     player: 0xff0000,
+    goal: 0xffffff,
+    ghost: 0x00bb22,
+    checkpoint: 0x44eeff,
 };
 
 export interface IGameBlock {
@@ -47,4 +66,4 @@ export interface IGameBlock {
     subtype?: string;
 }
 
-export type GameBlockType = "normal" | "spring" | "breakable" | "switch" | "door" | "player";
+export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | "player" | "goal" | "ghost" | "checkpoint";

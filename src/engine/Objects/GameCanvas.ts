@@ -10,6 +10,8 @@ export class GameCanvas extends PIXI.Container {
 
   blocks: GameBlock[] = [];
   background: PIXI.Graphics = new PIXI.Graphics();
+  movingLayer: PIXI.Container = new PIXI.Container();
+  staticLayer: PIXI.Container = new PIXI.Container();
   layers: PIXI.Container[] = [
     this.background,
     new PIXI.Container(),
@@ -20,8 +22,10 @@ export class GameCanvas extends PIXI.Container {
 
   constructor(public boundWidth: number, public boundHeight: number, scale: number) {
     super();
-
-    this.layers.forEach(layer => this.addChild(layer));
+    this.addChild(this.movingLayer);
+    this.addChild(this.staticLayer);
+    this.layers.forEach(layer => this.movingLayer.addChild(layer));
+    this.staticLayer.addChild(this.layers[GameCanvas.UI]);
 
     this.background.rect(0, 0, boundWidth, boundHeight);
     this.background.fill(0x3366ff);
@@ -34,7 +38,6 @@ export class GameCanvas extends PIXI.Container {
   }
 
   resetBounds(width: number, height: number, floorHeight: number) {
-    this.blocks = [];
     this.background.clear();
 
     this.background.rect(0, 0, width, height);
@@ -45,6 +48,11 @@ export class GameCanvas extends PIXI.Container {
 
     this.boundWidth = width;
     this.boundHeight = height;
+  }
+
+  clearObjects() {
+    this.blocks.forEach(block => this.layers[GameCanvas.OBJECTS].removeChild(block));
+    this.blocks = [];
   }
 
   addObjects(objects: IGameBlock[]) {

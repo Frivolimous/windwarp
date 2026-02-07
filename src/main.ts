@@ -1,11 +1,8 @@
 import * as PIXI from "pixi.js";
 import _ from 'lodash';
-import { Firework } from "./JMGE/effects/Firework";
 import { GameEvents } from "./services/GameEvents";
 import { Debug } from "./services/_Debug";
 import { GameCanvas } from "./engine/Objects/GameCanvas";
-import { FontLoader } from "./services/FontLoader";
-import { Fonts } from "./data/Fonts";
 import { GameControl } from "./engine/Mechanics/GameControl";
 import { KeyboardControl } from "./services/KeyboardControl";
 import { TextureCache } from "./services/TextureCache";
@@ -31,6 +28,7 @@ export const Facade = new class {
     } catch (e) {}
 
     this.initializeApplication();
+    this.initializeBitmapSelect();
   }
 
   async initializeApplication() {
@@ -63,5 +61,28 @@ export const Facade = new class {
 
     this.app.stage.addChild(this.canvas);
     GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Setup Complete'});
+  }
+
+  initializeBitmapSelect() {
+    let input = document.getElementById('level-select') as HTMLInputElement;
+    input.addEventListener("input", (e: BlobEvent) => {
+      let file = (e.target as HTMLInputElement).files[0];
+      console.log(file);
+      
+      var reader = new FileReader();
+      reader.readAsDataURL(file);
+
+      reader.onload = readerEvent => {
+        var content = readerEvent.target.result;
+        const img = new Image();
+        img.src = content as string;
+        img.onload = () => {
+          createImageBitmap(img).then(bitmap => {
+            let level = LevelLoader.makeLevelData(bitmap);
+            Facade.control.loadLevelFromData(level);
+          });
+        }
+      }
+    });
   }
 }

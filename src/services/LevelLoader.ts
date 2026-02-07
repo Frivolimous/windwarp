@@ -5,6 +5,12 @@ export class LevelLoader {
     'assets/Level1.bmp',
     'assets/Level2.bmp',
     'assets/Level3.bmp',
+    'assets/Level4.bmp',
+    'assets/Level5.bmp',
+    'assets/Level6.bmp',
+    'assets/Level7.bmp',
+    'assets/Level8.bmp',
+    'assets/Level9.bmp',
   ];
 
   static levelBitmaps: ImageBitmap[] = [];
@@ -18,11 +24,9 @@ export class LevelLoader {
 
       img.onload = () => {
           // The image is loaded and ready for use
-          console.log(`Image ${src} loaded successfully!`);
           createImageBitmap(img).then(bitmap => {
             this.levelBitmaps[i] = bitmap;
             this.levelData[i] = this.makeLevelData(bitmap);
-            console.log(`Image ${src} converted to ImageBitmap!`);
             levelsLeft--;
             if (levelsLeft === 0) onComplete();
           });
@@ -95,7 +99,11 @@ export class LevelLoader {
 const ColorMapping: Record<string, GameBlockType> = {
   '0,255,0': 'normal',
   '255,255,0': 'spring',
+  '255,170,0': 'exploding',
   '255,0,0': 'player',
+  '255,255,255': 'goal',
+  '0,0,0': 'ghost',
+  '0,255,255': 'checkpoint',
 }
 
 export interface ILevelData {
