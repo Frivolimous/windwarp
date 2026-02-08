@@ -11,6 +11,7 @@ export class GameCanvas extends PIXI.Container {
 
   blocks: GameBlock[] = [];
   background: PIXI.Graphics = new PIXI.Graphics();
+  foreground = new PIXI.Graphics();
   backgroundRatio = 0.7;
   movingLayer: PIXI.Container = new PIXI.Container();
   staticLayer: PIXI.Container = new PIXI.Container();
@@ -77,6 +78,32 @@ export class GameCanvas extends PIXI.Container {
       this.blocks.push(block);
       this.layers[GameCanvas.OBJECTS].addChild(block);
     });
+
+    this.foreground.clear();
+    this.layers[GameCanvas.OBJECTS].addChild(this.foreground);
+    for (let x = 0; x < this.boundWidth; x += 20) {
+      for (let y = 0; y < this.boundHeight; y += 20) {
+        let b1 = this.findBlockAt(objects, x, y);
+        let bR = this.findBlockAt(objects, x + 20, y);
+        let bD = this.findBlockAt(objects, x, y + 20);
+
+        if (((b1 === undefined) !== (bR === undefined)) || (b1 !== undefined && (b1.type != bR.type))) {
+          if (b1 === undefined || bR === undefined || ((b1.type !== 'normal' || bR.type !== 'ghost') && (b1.type !== 'ghost' || bR.type !== 'normal'))) {
+            this.foreground.moveTo(x + 20, y).lineTo(x + 20, y + 20).stroke({width: 2, color: 0});
+          }
+        }
+
+        if (((b1 === undefined) !== (bD === undefined)) || (b1 !== undefined && b1.type != bD.type)) {
+          if (b1 === undefined || bD === undefined || ((b1.type !== 'normal' || bD.type !== 'ghost') && (b1.type !== 'ghost' || bD.type !== 'normal'))) {
+            this.foreground.moveTo(x, y + 20).lineTo(x + 20, y + 20).stroke({width: 2, color: 0});
+          }
+        }
+      }
+    }
+  }
+
+  findBlockAt(objects: IGameBlock[], x: number, y: number): IGameBlock {
+    return objects.find(el => (el.x <= x) && (el.x + el.width > x) && (el.y <= y) && (el.y + el.height > y) && (el.type !== 'exploding'));
   }
 
   removeObject(obj: IGameBlock) {

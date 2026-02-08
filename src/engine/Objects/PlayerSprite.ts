@@ -64,10 +64,10 @@ export class PlayerSprite extends PIXI.Container {
     drawPlayer() {
         this.view.ellipse(this.collider.width/2, this.collider.height/2, this.collider.width/2, this.collider.height/2);
         this.view.fill(0xff6633);
-        // this.view.stroke({width: 2, color: 0});
+        this.view.stroke({width: 2, color: 0});
         this.view.circle(this.collider.width / 2, this.collider.width * 0.8, this.collider.width * 0.8);
         this.view.fill(0xee1144);
-        // this.view.stroke({width: 2, color: 0}); 
+        this.view.stroke({width: 2, color: 0}); 
     }
 
     setMovementState(state: MovementState) {

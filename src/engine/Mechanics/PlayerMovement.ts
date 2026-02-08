@@ -591,7 +591,7 @@ export class PlayerMovement {
 
   public checkIfFall(player: PlayerSprite, vCollision: WorldResponse): Boolean {
     if (vCollision.down > 0) {
-      if (player.movementState === 'crouching' || player.movementState === 'crawling') {
+      if (player.movementState === 'crouching' || player.movementState === 'crawling' || player.movementState === 'rolling') {
         player.setMovementState('falling');
         vCollision = this.world.checkVertical(player.getCollider());
         if (vCollision.up < 0) player.y -= vCollision.up;
