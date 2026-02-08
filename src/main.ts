@@ -17,8 +17,7 @@ export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 export const Facade = new class {
   public app: PIXI.Application;
 
-  public worldBounds = new PIXI.Rectangle(0, 0, 1900, 1200);
-  public scale = 0.5;
+  public worldBounds = new PIXI.Rectangle(0, 0, 950, 600);
 
   public mainPage: MenuUI;
   public gamePage: GameUI;
@@ -40,8 +39,8 @@ export const Facade = new class {
     this.app = new PIXI.Application();
 
     await this.app.init({
-      width: this.worldBounds.width * this.scale,
-      height: this.worldBounds.height * this.scale,
+      width: this.worldBounds.width,
+      height: this.worldBounds.height,
       backgroundColor: 0x1e1e1e
     });
     let holder = document.getElementById('canvas-holder');
@@ -61,13 +60,10 @@ export const Facade = new class {
   init() {
     this.mainPage = new MenuUI(this.worldBounds);
     this.gamePage = new GameUI(this.worldBounds, this.app.ticker);
-    // this.mainPage.scale.set(this.scale);
-    this.gamePage.scale.set(this.scale);
 
     this.blackScreen.rect(0, 0, this.worldBounds.width, this.worldBounds.height).fill(0);
 
     this.setPage(this.mainPage);
-    // this.setPage(this.gamePage);
 
     GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Setup Complete'});
   }

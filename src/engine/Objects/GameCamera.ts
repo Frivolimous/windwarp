@@ -10,8 +10,12 @@ export class GameCamera {
   dX = 0;
   dY = 0;
 
-  constructor(private canvas: GameCanvas, public viewWidth: number, public viewHeight: number) {
+  viewWidth: number;
+  viewHeight: number;
 
+  constructor(private canvas: GameCanvas) {
+    this.viewWidth = canvas.boundWidth;
+    this.viewHeight = canvas.boundHeight;
   }
 
   update(player: PlayerSprite, instant = false) {
@@ -38,5 +42,6 @@ export class GameCamera {
     }
     this.canvas.movingLayer.x = -this.x;
     this.canvas.movingLayer.y = -this.y;
+    this.canvas.parallaxBackground();
   }
 }

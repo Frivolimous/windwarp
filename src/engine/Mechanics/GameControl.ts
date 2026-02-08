@@ -22,18 +22,18 @@ export class GameControl {
     private camera: GameCamera;
     private running = true;
     private timer = new GameTimer();
-    private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 64, fill: 0xffffff}});
-    private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 64, fill: 0xffffff}}); 
+    private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}});
+    private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}}); 
 
     constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
         this.gameEnvironment = new GameEnvironment(canvas);
         this.playerMovement = new PlayerMovement(this.gameEnvironment);
-        this.camera = new GameCamera(this.canvas, Facade.worldBounds.width, Facade.worldBounds.height);
-        this.player = new PlayerSprite(15, 60);
+        this.camera = new GameCamera(this.canvas);
+        this.player = new PlayerSprite(8, 30);
         this.playerMovement.setPlayer(this.player);
         this.canvas.addPlayer(this.player);
         this.canvas.layers[GameCanvas.UI].addChild(this.timer);
-        this.timer.position.set(Facade.worldBounds.width - 100, 20);
+        this.timer.position.set(Facade.worldBounds.width - 80, 20);
 
         this.levelCompleteText.anchor.set(0.5);
         this.levelCompleteText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
@@ -85,7 +85,7 @@ export class GameControl {
         this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
 
         this.gameEnvironment.setupLevel(data);
-        this.canvas.resetBounds(data.width, data.height, data.height);
+        this.canvas.resetBounds(data.width, data.height);
         this.player.position.set(data.startingPosition.x, data.startingPosition.y);
 
         this.canvas.clearObjects();

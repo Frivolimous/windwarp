@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { GameBlock, IGameBlock } from "./GameBlock";
+import { colorLuminance } from "../../JMGE/others/Colors";
 
 export class GameCanvas extends PIXI.Container {
   public static BACKGROUND = 0;
@@ -10,6 +11,7 @@ export class GameCanvas extends PIXI.Container {
 
   blocks: GameBlock[] = [];
   background: PIXI.Graphics = new PIXI.Graphics();
+  backgroundRatio = 0.7;
   movingLayer: PIXI.Container = new PIXI.Container();
   staticLayer: PIXI.Container = new PIXI.Container();
   layers: PIXI.Container[] = [
@@ -20,31 +22,42 @@ export class GameCanvas extends PIXI.Container {
     new PIXI.Container(),
   ];
 
-  constructor(public boundWidth: number, public boundHeight: number, scale: number) {
+  constructor(public boundWidth: number, public boundHeight: number, scale: number = 0.5) {
     super();
-    this.addChild(this.movingLayer);
-    this.addChild(this.staticLayer);
-    this.layers.forEach(layer => this.movingLayer.addChild(layer));
+    this.addChild(this.background, this.movingLayer, this.staticLayer);
+    this.movingLayer.addChild(this.layers[GameCanvas.OBJECTS], this.layers[GameCanvas.PLAYER], this.layers[GameCanvas.EFFECTS]);
     this.staticLayer.addChild(this.layers[GameCanvas.UI]);
 
-    this.background.rect(0, 0, boundWidth, boundHeight);
+    this.background.rect(0, 0, boundWidth * this.backgroundRatio, boundHeight * this.backgroundRatio);
     this.background.fill(0x3366ff);
 
     this.background.rect(0, 900, boundWidth, boundHeight - 900);
     this.background.fill(0x33ff66);
 
-    this.scale.set(scale, scale);
     this.eventMode = 'dynamic';
   }
 
-  resetBounds(width: number, height: number, floorHeight: number) {
+  parallaxBackground() {
+    let pX = this.movingLayer.x / this.boundWidth;
+    let pY = this.movingLayer.y / this.boundHeight;
+
+    this.background.position.set (this.boundWidth * this.backgroundRatio * pX, this.boundHeight * this.backgroundRatio * pY);
+    // consol
+  }
+
+  resetBounds(width: number, height: number) {
     this.background.clear();
 
     this.background.rect(0, 0, width, height);
     this.background.fill(0x3366ff);
+    
+    let area = width * height;
+    console.log(area);
 
-    this.background.rect(0, floorHeight, width, height - floorHeight);
-    this.background.fill(0x33ff66);
+    for (let i = 0; i < area; i += 100000) {
+      this.background.ellipse(Math.random() * width, Math.random() * height, 50 + Math.random() * 50, 50 + Math.random() * 50);
+      this.background.fill(colorLuminance(0x3366ff,  1.05 + Math.random() * 0.1))
+    }
 
     this.boundWidth = width;
     this.boundHeight = height;

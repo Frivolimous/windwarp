@@ -30,7 +30,7 @@ export class MenuUI extends BaseUI {
     
     let oriLevels = new PIXI.Text({text: "Ori's Levels:", style: {fontSize: 25}});
     let ori1 = new Button({buttonLabel: 'Treasure Hunt', onClick: () => this.startLevel(2), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori2 = new Button({buttonLabel: 'Jetpack', onClick: () => this.startLevel(3), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let ori2 = new Button({buttonLabel: 'Sky Base', onClick: () => this.startLevel(3), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori3 = new Button({buttonLabel: 'Long Run', onClick: () => this.startLevel(5), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori4 = new Button({buttonLabel: 'Secret Passage', onClick: () => this.startLevel(6), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     oriLevels.position.set(525, 150);

@@ -9,7 +9,7 @@ const DExplosion: IExplosion = {
   angle_min: 0, angle_max: Math.PI * 2,
   mag_min: 1, mag_max: 3,
   fade: 0.06,
-  size_min: 5, size_max: 9,
+  size_min: 2, size_max: 5,
   tint: 0xcccccc,
 };
 

@@ -14,13 +14,13 @@ export class GameUI extends BaseUI {
   constructor(worldBounds: PIXI.Rectangle, private ticker: PIXI.Ticker) {
     super();
     this.keyboard = new KeyboardControl();
-    this.canvas = new GameCanvas(worldBounds.width, worldBounds.height, 1);
+    this.canvas = new GameCanvas(worldBounds.width, worldBounds.height);
     this.control = new GameControl(this.canvas, this.keyboard);
 
     this.keyboard.disabled = true;
 
-    let backB = new Button({buttonLabel: '<<', onClick: () => Facade.setPage(Facade.mainPage), color: 0xffcc00, width: 80, height: 80, labelStyle: {fontSize: 40, fontWeight: 'bold'}});
-    backB.position.set(50, 50);
+    let backB = new Button({buttonLabel: '<', onClick: () => Facade.setPage(Facade.mainPage), color: 0xffcc00, width: 40, height: 40, labelStyle: {fontSize: 20, fontWeight: 'bold'}});
+    backB.position.set(30, 30);
     this.addChild(this.canvas, backB);
   }
 

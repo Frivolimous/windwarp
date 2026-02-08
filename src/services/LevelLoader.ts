@@ -34,7 +34,7 @@ export class LevelLoader {
     });
   }
 
-  public static makeLevelData(bitmap: ImageBitmap, pixelsPerBlock = 40): ILevelData {
+  public static makeLevelData(bitmap: ImageBitmap, pixelsPerBlock = 20): ILevelData {
     let canvas = document.createElement('canvas');
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;

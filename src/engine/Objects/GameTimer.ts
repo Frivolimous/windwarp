@@ -7,7 +7,7 @@ export class GameTimer extends PIXI.Container {
 
   constructor() {
     super();
-    this.text = new PIXI.Text({text:'0.00', style:{fontSize: 32, fill: 0xffffff}});
+    this.text = new PIXI.Text({text:'0.00', style:{fontSize: 18, fill: 0xffffff, dropShadow: { color: 0, blur: 2, distance: 3 }}});
     this.addChild(this.text);
   }
 

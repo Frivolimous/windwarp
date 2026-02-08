@@ -4,38 +4,38 @@ import { GameEnvironment, WorldResponse } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
 
 export class PlayerMovement {
-  private moveSpeed = 2;
+  private moveSpeed = 1;
+  private maxSpeed = 7.5;
+  private minSpeed = 0.25;
+  private jumpSpeed = -7.5;
+  private springSpeed = -15;
+  private gravity = 0.45;
+  private airMoveSpeed = 0.5;
+  private terminalVelocity = 15;
+  private kickVX = 10;
+  private climbSpeed = 1;
+  private minGrabSpeed = 2;
+  private divingSpeed = 10;
+  private grabSlideSpeed = 0.5;
+  private maxRollSpeed = 7.5;
+  private rollSpeedNeeded = 2;
+  private jetpackSpeed = -0.25;
+  private jetpackMaxSpeed = -5;
+
   private crouchSpeedMult = 0.5;
-  private airMoveSpeed = 1;
-  private maxSpeed = 15;
-  private minSpeed = 0.5;
-  private jumpSpeed = -15;
-  private springSpeed = -30;
-  private gravity = 0.9;
-  private terminalVelocity = 30;
-  private kickVX = 20;
-  private climbSpeed = 2;
-  private minGrabSpeed = 4;
-  private divingSpeed = 20;
-  private grabSlideSpeed = 1;
-  
+  private rollSpeedMult = 1.5;
   private friction = 0.8;
   private airFriction = 0.9;
   private bounce = -0.5;
   private bounceTime = 5;
   private kickTime = 15;
   private grabTime = 50;
+  private landTimeVMult = 1;
 
-  private rollSpeedMult = 1.5;
-  private maxRollSpeed = 15;
-  private rollSpeedNeeded = 4;
   private rollTime = 20;
   private rollAfterTime = 5;
   private landTimeBase = 10;
-  private landTimeVMult = 1;
 
-  private jetpackSpeed = -0.5;
-  private jetpackMaxSpeed = -10;
 
   private maxDoubleJumps = 1;
   private maxWallGrabs = Infinity;
