@@ -80,8 +80,9 @@ export class PlayerSprite extends PIXI.Container {
         GameEvents.ACTIVITY_LOG.publish({slug: 'PLAYER_STATE', text: state});
     }
 
-    public getCollider() {
-        if (this.movementState === 'crouching' || this.movementState === 'crawling' || this.movementState === 'rolling' || this.movementState === 'climbing-left' || this.movementState === 'climbing-right') {
+    public getCollider(state?: MovementState) {
+        state = state || this.movementState;
+        if (state === 'crouching' || state === 'crawling' || state === 'rolling' || state === 'climbing-left' || state === 'climbing-right') {
             return new PIXI.Rectangle(this.x, this.y + this.collider.height / 2, this.collider.width, this.collider.height / 2);
         }
         return new PIXI.Rectangle(this.x, this.y, this.collider.width, this.collider.height);

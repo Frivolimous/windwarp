@@ -24,7 +24,7 @@ export class GameEnvironment {
   }
 
   public checkWorld(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
-    let response = {
+    let response: WorldResponse = {
       up: Infinity,
       down: Infinity,
       left: Infinity,
@@ -98,6 +98,86 @@ export class GameEnvironment {
       }
     });
     
+    return response;
+  }
+  
+  public checkVertical(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+    let response: WorldResponse = {
+      up: Infinity,
+      down: Infinity,
+      left: Infinity,
+      right: Infinity,
+      upBlock: null,
+      downBlock: null,
+      leftBlock: null,
+      rightBlock: null,
+    }
+
+    response.down = this.floorHeight - rect.y - rect.height;
+
+    this.objects.forEach(obj => {
+      if (obj.type === 'ghost') return;
+      let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
+      let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
+
+      let mX = (rect.width + obj.width) / 2;
+      let mY = (rect.height + obj.height) / 2;
+
+      let oX = Math.abs(dX) - mX;
+      let oY = Math.abs(dY) - mY;
+
+      if (oX < 0 && oY <= 0) {
+          if (dY > 0) {
+            response.up = oY;
+            response.upBlock = obj;
+          } else {
+            response.down = oY;
+            response.downBlock = obj;
+          }
+      }
+    });
+
+    return response;
+  }
+
+  public checkHorizontal(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+    let response: WorldResponse = {
+      up: Infinity,
+      down: Infinity,
+      left: Infinity,
+      right: Infinity,
+      upBlock: null,
+      downBlock: null,
+      leftBlock: null,
+      rightBlock: null,
+    }
+
+    response.left = rect.x - this.wallLeft;
+    response.right = this.wallRight - rect.x - rect.width;
+
+
+    this.objects.forEach(obj => {
+      if (obj.type === 'ghost') return;
+      let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
+      let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
+
+      let mX = (rect.width + obj.width) / 2;
+      let mY = (rect.height + obj.height) / 2;
+
+      let oX = Math.abs(dX) - mX;
+      let oY = Math.abs(dY) - mY;
+
+      if (oX <= 0 && oY < 0) {
+          if (dX > 0) {
+            response.left = oX;
+            response.leftBlock = obj;
+          } else {
+            response.right = oX;
+            response.rightBlock = obj;
+          }
+      }
+    });
+
     return response;
   }
 

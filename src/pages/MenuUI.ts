@@ -9,7 +9,7 @@ export class MenuUI extends BaseUI {
     let background = new PIXI.Graphics();
     background.rect(0, 0, bounds.width, bounds.height).fill(0x00ccff);
     
-    let title = new PIXI.Text({text: 'Skeleton Warrior Speed Run!', style: {fontSize: 50}});
+    let title = new PIXI.Text({text: 'Level Up Speed Run: D.A.D.A.!', style: {fontSize: 50}});
     title.position.set(25, 50);
     
     let abaLevels = new PIXI.Text({text: "Aba's Levels:", style: {fontSize: 25}});
@@ -20,8 +20,8 @@ export class MenuUI extends BaseUI {
     aba2.position.set(25, 240);
     
     let talyaLevels = new PIXI.Text({text: "Talya's Levels:", style: {fontSize: 25}});
-    let talya1 = new Button({buttonLabel: 'Run Run Run', onClick: () => this.startLevel(1), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let talya2 = new Button({buttonLabel: 'Super Fall', onClick: () => this.startLevel(7), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let talya1 = new Button({buttonLabel: 'The Mountains', onClick: () => this.startLevel(1), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let talya2 = new Button({buttonLabel: 'Fall Secrets', onClick: () => this.startLevel(7), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let talya3 = new Button({buttonLabel: 'Escape Room', onClick: () => this.startLevel(8), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     talyaLevels.position.set(275, 150);
     talya1.position.set(275, 190);
@@ -31,7 +31,7 @@ export class MenuUI extends BaseUI {
     let oriLevels = new PIXI.Text({text: "Ori's Levels:", style: {fontSize: 25}});
     let ori1 = new Button({buttonLabel: 'Treasure Hunt', onClick: () => this.startLevel(2), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori2 = new Button({buttonLabel: 'Sky Base', onClick: () => this.startLevel(3), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori3 = new Button({buttonLabel: 'Long Run', onClick: () => this.startLevel(5), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let ori3 = new Button({buttonLabel: 'AOAO', onClick: () => this.startLevel(5), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori4 = new Button({buttonLabel: 'Secret Passage', onClick: () => this.startLevel(6), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     oriLevels.position.set(525, 150);
     ori1.position.set(525, 190);
