@@ -308,19 +308,16 @@ export class PlayerMovement {
         return;
       }
       if (topCollision.left > 0 && player.vX <= 0) {
-        console.log('climb');
         player.vX = 0;
         player.vY = 0;
         player.setMovementState('climbing-left');
       } else if (player.wallGrabsRemaining > 0 && !player.keys.right && player.vX < -this.minGrabSpeed) {
-        console.log('grab');
         player.vX = 0;
         player.vY = 0;
         player.wallGrabsRemaining--;
         player.grabTime = this.grabTime;
         player.setMovementState('wall-grab-left');
       } else if (player.vX < 0) {
-        console.log('bounce');
         player.vX = this.bounce * player.vX;
         player.bounceTime = this.bounceTime;
       }

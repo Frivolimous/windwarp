@@ -95,7 +95,6 @@ export const Facade = new class {
     let input = document.getElementById('level-select') as HTMLInputElement;
     input.addEventListener("input", (e: BlobEvent) => {
       let file = (e.target as HTMLInputElement).files[0];
-      console.log(file);
       
       var reader = new FileReader();
       reader.readAsDataURL(file);

@@ -52,7 +52,6 @@ export class GameCanvas extends PIXI.Container {
     this.background.fill(0x3366ff);
     
     let area = width * height;
-    console.log(area);
 
     for (let i = 0; i < area; i += 100000) {
       this.background.ellipse(Math.random() * width, Math.random() * height, 50 + Math.random() * 50, 50 + Math.random() * 50);
