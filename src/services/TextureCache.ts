@@ -97,7 +97,7 @@ export class TextureCache {
 function createGraphicTextures() {
     let graphic = new PIXI.Graphics();
     for (let i = 5; i <= 30; i += 5) {
-      graphic.clear()
+      graphic.clear();
       graphic.setStrokeStyle({ width: 2, color: 0xffffff });
       graphic.circle(0, 0, i);
       graphic.fill(0x333333);

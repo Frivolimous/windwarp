@@ -1,10 +1,9 @@
 Windwarp
 
 TODO
-Game start: move to start timer
 Main menu
 
-Glitch jumping and climbing...
+Glitch jumping and climbing... (fixed???);
 Redo collision system velocity based
 Refactor movement system
 
@@ -13,10 +12,8 @@ Animate head
 Split body in half and animate
 
 Block textures
+Stroke around Blocks
 Player textures
-
-Zip to checkpoint instead of instant
-Smooth camera
 
 Instructions to play
 

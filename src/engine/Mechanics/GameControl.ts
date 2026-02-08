@@ -20,6 +20,7 @@ export class GameControl {
     private running = true;
     private timer = new GameTimer();
     private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 64, fill: 0xffffff}});
+    private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 64, fill: 0xffffff}}); 
     player: PlayerSprite;
 
     constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
@@ -34,6 +35,9 @@ export class GameControl {
 
         this.levelCompleteText.anchor.set(0.5);
         this.levelCompleteText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
+
+        this.gameStartText.anchor.set(0.5);
+        this.gameStartText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
 
         this.setupKeys();
 
@@ -75,6 +79,7 @@ export class GameControl {
 
     loadLevelFromData(data: ILevelData) {
         this.timer.reset();
+        this.timer.pause();
         this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
 
         this.gameEnvironment.setupLevel(data);
@@ -84,6 +89,15 @@ export class GameControl {
         this.canvas.clearObjects();
         this.canvas.addObjects(data.blocks);
 
+        this.camera.update(this.player, true);
+
+        window.requestAnimationFrame(() => {
+            this.canvas.layers[GameCanvas.UI].addChild(this.gameStartText);
+            this.keyboard.onAnyKey(() => {
+                this.gameStartText.parent.removeChild(this.gameStartText);
+                this.timer.start();
+            });
+        });
     }
 
     setupKeys() {

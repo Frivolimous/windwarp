@@ -1,3 +1,4 @@
+import * as PIXI from 'pixi.js';
 import { GameEvents } from "../../services/GameEvents";
 import { GameEnvironment, WorldResponse } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
@@ -54,7 +55,7 @@ export class PlayerMovement {
     if (lastCheckpoint) {
       player.x = lastCheckpoint.x + lastCheckpoint.width / 2 - player.collider.width / 2;
       player.y = lastCheckpoint.y - player.collider.height;
-      player.setGroundState('idle');
+      player.setMovementState('idle');
     } else {
       player.x = this.world.data.startingPosition.x;
       player.y = this.world.data.startingPosition.y;
@@ -67,12 +68,12 @@ export class PlayerMovement {
     let worldCollision = this.world.checkWorld(player.getCollider(), player.vX, player.vY);
 
     if (player.keys.jetpack) {
-      player.setGroundState('jetpacking');
+      player.setMovementState('jetpacking');
     }
 
-    switch(this.player.groundState) {
-      case 'idle': this.tickIdle(player, worldCollision); break;
-      case 'walking': this.tickWalk(player, worldCollision); break;
+    switch(this.player.movementState) {
+      case 'idle': case 'crouching': this.tickIdle(player, worldCollision); break;
+      case 'walking': case 'crawling': this.tickWalk(player, worldCollision); break;
       case 'ascending': case 'falling': case 'diving': this.tickAirborn(player, worldCollision); break;
       case 'wall-grab-left': case 'wall-grab-right': this.tickGrab(player, worldCollision); break;
       case 'climbing-left': case 'climbing-right': this.tickClimbing(player, worldCollision); break;
@@ -84,7 +85,7 @@ export class PlayerMovement {
       if (!this.player.keys.up) this.player.keys.holdUp = false;
     }
 
-    GameEvents.ACTIVITY_LOG.publish({slug: 'VELOCITY', text: `${player.vX}, ${player.vY}`});
+    GameEvents.ACTIVITY_LOG.publish({slug: 'VELOCITY', text: `${player.vX.toFixed(2)}, ${player.vY.toFixed(2)}`});
   }
 
   public tickIdle(player: PlayerSprite, worldCollision: WorldResponse) {
@@ -92,27 +93,28 @@ export class PlayerMovement {
       player.landTime--;
     }
 
-    if (player.keys.up && player.standState === 'standing' && player.landTime <= 0) {
+    if (player.keys.up && player.movementState === 'idle' && player.landTime <= 0) {
       if (this.startJump(player)) {
         this.tickAirborn(player, worldCollision);
         return;
       }
     }
 
-    if (player.keys.down && player.standState !== 'crouching') {
-      player.standState = 'crouching';
-      GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'crouching'})
-    } else if (!player.keys.down && player.standState === 'crouching' && this.world.checkWorld(player.getTopCollider(), 0, 0).up >= 0) {
-      player.standState = 'standing';
-      GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'standing'})
+    if (player.keys.down && player.movementState !== 'crouching') {
+      player.setMovementState('crouching');
+    } else if (!player.keys.down && player.movementState === 'crouching' && this.world.checkWorld(player.getTopCollider(), 0, 0).up >= 0) {
+      player.setMovementState('idle');
     }
 
     if ((player.keys.right && worldCollision.right > this.moveSpeed * 10) ||
         (player.keys.left && worldCollision.left > this.moveSpeed * 10)) {
-      player.setGroundState('walking');
+      player.setMovementState(player.movementState === 'idle' ? 'walking' : 'crawling');
       this.tickWalk(player, worldCollision);
       return;
     }
+
+    if (worldCollision.left < 0) player.x -= worldCollision.left;
+    if (worldCollision.right < 0) player.x += worldCollision.right;
 
     this.checkIfFall(player, worldCollision);
   }
@@ -122,43 +124,40 @@ export class PlayerMovement {
       player.landTime--;
     }
     
-    if (player.keys.up && player.standState === 'standing' &&player.landTime <= 0) {
+    if (player.keys.up && player.movementState === 'walking' &&player.landTime <= 0) {
       if (this.startJump(player)) return;
     }
 
-    if (player.keys.down && player.standState !== 'crouching') {
+    if (player.keys.down && player.movementState === 'walking') {
       if(Math.abs(player.vX) > this.rollSpeedNeeded) {
-        player.setGroundState('rolling');
-        player.standState = 'crouching';
+        player.setMovementState('rolling');
         player.vX = player.vX > 0 ? Math.min(this.maxRollSpeed, player.vX * this.rollSpeedMult) : Math.max(-this.maxRollSpeed, player.vX * this.rollSpeedMult);
         player.rollTime = this.rollTime;
         this.tickRolling(player, worldCollision);
         return;
       } else {
-        player.standState = 'crouching';
-        GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'crouching'})
+        player.setMovementState('crawling');
       }
-    } else if (!player.keys.down && player.standState === 'crouching' && this.world.checkWorld(player.getTopCollider(), 0, 0).up >= 0) {
-      player.standState = 'standing';
-      GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'standing'})
+    } else if (!player.keys.down && player.movementState === 'crawling' && this.world.checkWorld(player.getTopCollider(), 0, 0).up >= 0) {
+      player.setMovementState('walking');
     }
 
     if (player.bounceTime > 0) {
       player.bounceTime -= 1;
     } else if (player.landTime <= 0) {
       if (player.keys.right) {
-        player.vX += this.moveSpeed * (player.standState === 'crouching' ? this.crouchSpeedMult : 1);
+        player.vX += this.moveSpeed * (player.movementState === 'crawling' ? this.crouchSpeedMult : 1);
         player.vX = Math.min(player.vX, this.maxSpeed);
       }
       if (player.keys.left) {
-        player.vX -= this.moveSpeed * (player.standState === 'crouching' ? this.crouchSpeedMult : 1)
+        player.vX -= this.moveSpeed * (player.movementState === 'crawling' ? this.crouchSpeedMult : 1)
         player.vX = Math.max(player.vX, -this.maxSpeed);
       }
     }
 
     player.vX *= this.friction;
     if (Math.abs(player.vX) < this.minSpeed) {
-      player.setGroundState('idle');
+      player.setMovementState(player.movementState === 'walking' ? 'idle' : 'crouching');
       player.vX = 0;
       return;
     }
@@ -169,7 +168,7 @@ export class PlayerMovement {
       if (topCollision.left > 0 && player.vX <= 0) {
         player.vX = 0;
         player.vY = 0;
-        player.setGroundState('climbing-left');
+        player.setMovementState('climbing-left');
       } else if (player.vX < 0) {
         player.x -= worldCollision.left;
         if (player.vX < -this.maxSpeed / 2) {
@@ -181,7 +180,7 @@ export class PlayerMovement {
             player.bounceTime = this.bounceTime;
           }
         } else {
-          player.setGroundState('idle');
+          player.setMovementState(player.movementState === 'walking' ? 'idle' : 'crouching');
           player.vX = 0;
         }
       }
@@ -192,7 +191,7 @@ export class PlayerMovement {
       if (topCollision.right > 0 && player.vX >= 0) {
         player.vX = 0;
         player.vY = 0;
-        player.setGroundState('climbing-right');
+        player.setMovementState('climbing-right');
       } else if (player.vX > 0) {
         player.x += worldCollision.right;
         if (player.vX > this.maxSpeed / 2) {
@@ -204,7 +203,7 @@ export class PlayerMovement {
             player.bounceTime = this.bounceTime;
           }
         } else {
-          player.setGroundState('idle');
+          player.setMovementState('idle');
           player.vX = 0;
         }
       }
@@ -215,8 +214,8 @@ export class PlayerMovement {
 
   public tickJetpacking(player: PlayerSprite, worldCollision: WorldResponse) {
     if (player.keys.jetpack === false) {
-      if (player.groundState === 'jetpacking') {
-        player.setGroundState('ascending');
+      if (player.movementState === 'jetpacking') {
+        player.setMovementState('ascending');
         this.tickAirborn(player, worldCollision);
         return;
       }
@@ -291,15 +290,15 @@ export class PlayerMovement {
           player.doubleJumpsRemaining -= 1;
           this.startJump(player, true);
         } else {
-          if (player.groundState === 'ascending') {
+          if (player.movementState === 'ascending') {
             player.keys.holdUp = true;
           }
         }
       }
     }
 
-    if (player.keys.down && player.groundState !== 'diving') {
-      player.setGroundState('diving');
+    if (player.keys.down && player.movementState !== 'diving') {
+      player.setMovementState('diving');
       player.vY = Math.max(this.divingSpeed, player.vY);
     }
 
@@ -316,6 +315,9 @@ export class PlayerMovement {
       }
     }
 
+    let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
+
+
     player.vX *= this.airFriction;
     player.vY += this.gravity;
     player.vY = Math.min(player.vY, this.terminalVelocity);
@@ -323,21 +325,74 @@ export class PlayerMovement {
     player.x += player.vX;
     player.y += player.vY;
 
-    if (player.standState === 'crouching') {
-      player.standState = 'standing';
-      GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'standing'})
+    if (worldCollision.left < 0) {
+      if (worldCollision.leftBlock && (worldCollision.leftBlock.type === 'spring' || worldCollision.leftBlock.type === 'exploding')) {
+        if (worldCollision.leftBlock.type === 'exploding') this.world.getObject(worldCollision.leftBlock).explode();
+        player.vX = -this.springSpeed;
+        return;
+      }
+      if (topCollision.left > 0 && player.vX <= 0) {
+        player.vX = 0;
+        player.vY = 0;
+        player.setMovementState('climbing-left');
+      } else if (player.wallGrabsRemaining > 0 && !player.keys.right && player.vX < -this.minGrabSpeed) {
+        player.x -= worldCollision.left + player.vX;
+        player.vX = 0;
+        player.vY = 0;
+        player.setMovementState('wall-grab-left');
+        player.wallGrabsRemaining--;
+        player.grabTime = this.grabTime;
+      } else if (player.vX < 0) {
+        player.x -= worldCollision.left;
+        player.vX = this.bounce * player.vX;
+        player.bounceTime = this.bounceTime;
+      }
     }
 
-    if (worldCollision.down <= 0 && (player.groundState === 'falling' || player.groundState === 'diving')) {
+    if (worldCollision.right < 0) {
+      if (worldCollision.rightBlock && (worldCollision.rightBlock.type === 'spring' || worldCollision.rightBlock.type === 'exploding')) {
+        if (worldCollision.rightBlock.type === 'exploding') this.world.getObject(worldCollision.rightBlock).explode();
+        player.vX = this.springSpeed;
+        return;
+      }
+      if (topCollision.right > 0 && player.vX >= 0) {
+        player.vX = 0;
+        player.vY = 0;
+        player.setMovementState('climbing-right');
+      } else if (player.wallGrabsRemaining > 0 && !player.keys.left && player.vX > this.minGrabSpeed) {
+        player.x += worldCollision.right - player.vX;
+        player.vX = 0;
+        player.vY = 0;
+        player.setMovementState('wall-grab-right');
+        player.wallGrabsRemaining--;
+        player.grabTime = this.grabTime;
+      } else if (player.vX > 0) {
+        player.x += worldCollision.right;
+        player.vX = this.bounce * player.vX;
+        player.bounceTime = this.bounceTime;
+      }
+    }
+
+    if (worldCollision.up < 0) {
+      if (player.movementState === 'ascending') {
+        player.setMovementState('falling');
+        if (worldCollision.upBlock && (worldCollision.upBlock.type === 'spring' || worldCollision.upBlock.type === 'exploding')) {
+          if (worldCollision.upBlock.type === 'exploding') this.world.getObject(worldCollision.upBlock).explode();
+          player.y -= worldCollision.up + player.vY;
+          player.vY = -this.springSpeed;
+        } else {
+          player.vY = 0;
+          player.y -= worldCollision.up;
+        }
+      }
+    }
+
+    if (worldCollision.down <= 0 && (player.movementState === 'falling' || player.movementState === 'diving')) {
       if (worldCollision.downBlock) {
         player.y += worldCollision.down - player.vY;
         player.vY = 0;
-        if (player.groundState === 'diving') {
-          player.standState = 'crouching';
-          GameEvents.ACTIVITY_LOG.publish({slug: 'STAND_STATE', text: 'crouching'});
-        }
   
-        player.setGroundState('walking');
+        player.setMovementState('crawling');
         player.doubleJumpsRemaining = this.maxDoubleJumps;
         player.wallGrabsRemaining = this.maxWallGrabs;
         player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
@@ -351,72 +406,8 @@ export class PlayerMovement {
       }
     }
 
-    if (worldCollision.left < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
-      if (topCollision.left > 0 && player.vX <= 0) {
-        player.vX = 0;
-        player.vY = 0;
-        player.setGroundState('climbing-left');
-      } else if (player.wallGrabsRemaining > 0 && !player.keys.right && player.vX < -this.minGrabSpeed && (!worldCollision.leftBlock || (worldCollision.leftBlock.type !== 'spring' && worldCollision.leftBlock.type !== 'exploding'))) {
-        player.x -= worldCollision.left;
-        player.vX = 0;
-        player.vY = 0;
-        player.setGroundState('wall-grab-left');
-        player.wallGrabsRemaining--;
-        player.grabTime = this.grabTime;
-      } else if (player.vX < 0) {
-        if (worldCollision.leftBlock && (worldCollision.leftBlock.type === 'spring' || worldCollision.leftBlock.type === 'exploding')) {
-          if (worldCollision.leftBlock.type === 'exploding') this.world.getObject(worldCollision.leftBlock).explode();
-          player.vX = -this.springSpeed;
-        } else {
-          player.x -= worldCollision.left;
-          player.vX = this.bounce * player.vX;
-          player.bounceTime = this.bounceTime;
-        }
-      }
-    }
-
-    if (worldCollision.right < 0) {
-      let topCollision = this.world.checkWorld(player.getTopCollider(), player.vX, player.vY);
-      if (topCollision.right > 0 && player.vX >= 0) {
-        player.vX = 0;
-        player.vY = 0;
-        player.setGroundState('climbing-right');
-      } else if (player.wallGrabsRemaining > 0 && !player.keys.left && player.vX > this.minGrabSpeed && (!worldCollision.rightBlock || (worldCollision.rightBlock.type !== 'spring' && worldCollision.rightBlock.type !== 'exploding'))) {
-        player.x += worldCollision.right;
-        player.vX = 0;
-        player.vY = 0;
-        player.setGroundState('wall-grab-right');
-        player.wallGrabsRemaining--;
-        player.grabTime = this.grabTime;
-      } else if (player.vX > 0) {
-        if (worldCollision.rightBlock && (worldCollision.rightBlock.type === 'spring' || worldCollision.rightBlock.type === 'exploding')) {
-          if (worldCollision.rightBlock.type === 'exploding') this.world.getObject(worldCollision.rightBlock).explode();
-          player.vX = this.springSpeed;
-        } else {
-          player.x += worldCollision.right;
-          player.vX = this.bounce * player.vX;
-          player.bounceTime = this.bounceTime;
-        }
-      }
-    }
-
-    if (worldCollision.up < 0) {
-      if (player.groundState === 'ascending') {
-        player.setGroundState('falling');
-        if (worldCollision.upBlock && (worldCollision.upBlock.type === 'spring' || worldCollision.upBlock.type === 'exploding')) {
-          if (worldCollision.upBlock.type === 'exploding') this.world.getObject(worldCollision.upBlock).explode();
-          player.y -= worldCollision.up + player.vY;
-          player.vY = -this.springSpeed;
-        } else {
-          player.vY = 0;
-          player.y -= worldCollision.up;
-        }
-      }
-    }
-
-    if (player.groundState === 'ascending' && player.vY > 0) {
-      player.setGroundState('falling');
+    if (player.movementState === 'ascending' && player.vY > 0) {
+      player.setMovementState('falling');
     }
   }
 
@@ -424,51 +415,49 @@ export class PlayerMovement {
     player.grabTime--;
 
     if (player.grabTime <= 0) {
-      player.setGroundState('falling');
+      player.setMovementState('falling');
     }
 
     if (player.keys.up) {
-      let c = player.groundState === 'wall-grab-left' ? 1 : -1;
+      let c = player.movementState === 'wall-grab-left' ? 1 : -1;
       if (this.startJump(player)) {
         player.vX = this.kickVX * c;
         player.bounceTime = this.kickTime;
         this.tickAirborn(player, worldCollision);
         return;
       }
-    } else if (player.keys.down || (player.keys.right && player.groundState === 'wall-grab-left') || (player.keys.left && player.groundState === 'wall-grab-right')) {
-      player.setGroundState('falling');
+    } else if (player.keys.down || (player.keys.right && player.movementState === 'wall-grab-left') || (player.keys.left && player.movementState === 'wall-grab-right')) {
+      player.setMovementState('falling');
       return;
     }
 
-    if (player.groundState === 'wall-grab-left' && worldCollision.left > 0) {
-      player.setGroundState('falling');
+    if (player.movementState === 'wall-grab-left' && worldCollision.left > 0) {
+      player.setMovementState('falling');
       return;
     }
-    if (player.groundState === 'wall-grab-right' && worldCollision.right > 0) {
-      player.setGroundState('falling');
+    if (player.movementState === 'wall-grab-right' && worldCollision.right > 0) {
+      player.setMovementState('falling');
       return;
     }
     if (worldCollision.down < 0) {
       player.y += worldCollision.down;
-      player.setGroundState('idle');
+      player.setMovementState('idle');
       return;
     }
 
     this.player.y += this.grabSlideSpeed;
   }
 
-  public tickClimbing(player: PlayerSprite, worldCollision: WorldResponse) {
-    this.player.standState = 'crouching';
-    
-    if (player.groundState === 'climbing-left' && worldCollision.left > 0) {
-      player.setGroundState('idle');
+  public tickClimbing(player: PlayerSprite, worldCollision: WorldResponse) {    
+    if (player.movementState === 'climbing-left' && worldCollision.left > 0) {
+      player.setMovementState('crouching');
       if (worldCollision.down < 0) {
         player.y += worldCollision.down;
       }
       return;
     }
-    if (player.groundState === 'climbing-right' && worldCollision.right > 0) {
-      player.setGroundState('idle');
+    if (player.movementState === 'climbing-right' && worldCollision.right > 0) {
+      player.setMovementState('crouching');
       if (worldCollision.down < 0) {
         player.y += worldCollision.down;
       }
@@ -477,7 +466,7 @@ export class PlayerMovement {
 
     if (worldCollision.up < 0) {
       player.y += worldCollision.up;
-      player.setGroundState('falling');
+      player.setMovementState('falling');
       return;
     }
 
@@ -487,9 +476,8 @@ export class PlayerMovement {
   public tickRolling(player: PlayerSprite, worldCollision: WorldResponse) {
     player.rollTime--;
     if (player.rollTime <= 0) {
-      player.standState = 'crouching';
       player.bounceTime = this.rollAfterTime;
-      player.setGroundState('walking');
+      player.setMovementState('crawling');
       return;
     }
 
@@ -525,7 +513,7 @@ export class PlayerMovement {
 
   public checkIfFall(player: PlayerSprite, worldCollision: WorldResponse) {
     if (worldCollision.down > 0) {
-      player.setGroundState('falling');
+      player.setMovementState('falling');
     } else {
       if (worldCollision.down === 0 && worldCollision.downBlock) {
         if (worldCollision.downBlock.type === 'switch') {          
@@ -536,7 +524,7 @@ export class PlayerMovement {
           if (worldCollision.downBlock.type === 'exploding') this.world.getObject(worldCollision.downBlock).explode();
           player.vY = this.springSpeed;
           player.bounceTime = this.bounceTime;
-          player.setGroundState('ascending');
+          player.setMovementState('ascending');
         } else if (worldCollision.downBlock.type === 'goal') {
           GameEvents.LEVEL_COMPLETE.publish();
         }
@@ -547,7 +535,7 @@ export class PlayerMovement {
   public startJump(player: PlayerSprite, doublejump?: boolean) {
     if (player.keys.holdUp) return false;
 
-    player.setGroundState('ascending');
+    player.setMovementState('ascending');
     player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
     player.keys.holdUp = true;
 

@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 
 export class GameTimer extends PIXI.Container {
   private time = 0;
+  private recording = true;
   private text: PIXI.Text;
 
   constructor() {
@@ -11,6 +12,7 @@ export class GameTimer extends PIXI.Container {
   }
 
   public update(delta: number) {
+    if (!this.recording) return;
     this.time += delta;
     this.text.text = (this.time / 1000).toFixed(2);
   }
@@ -22,5 +24,13 @@ export class GameTimer extends PIXI.Container {
 
   public getTime() {
     return this.time;
+  }
+
+  public pause() {
+    this.recording = false;
+  }
+
+  public start() {
+    this.recording = true;
   }
 }

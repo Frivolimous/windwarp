@@ -8,7 +8,6 @@ export const GOD_MODE = true;
 export class Debug {
   private static states = {
     groundState: '',
-    standState: '',
     velocity: '',
   };
 
@@ -18,10 +17,9 @@ export class Debug {
         // console.log('ACTION:', e.slug, ' : ', e.text || ' ');
         switch (e.slug) {
           case 'PLAYER_STATE' : this.states.groundState = e.text; break;
-          case 'STAND_STATE' : this.states.standState = e.text; break;
           case 'VELOCITY' : this.states.velocity = e.text; break;
         }
-        debugDisplay.innerHTML = `${this.states.groundState} / ${this.states.standState} / ${this.states.velocity}`;
+        debugDisplay.innerHTML = `${this.states.groundState} / ${this.states.velocity}`;
         // console.log(debugDisplay.innerHTML);
       });
       GameEvents.APP_LOG.addListener(e => {

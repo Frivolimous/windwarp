@@ -58,6 +58,10 @@ export class GameCanvas extends PIXI.Container {
   addObjects(objects: IGameBlock[]) {
     objects.forEach(obj => {
       let block = new GameBlock(obj);
+      
+      // let upObj = !objects.filter(o => (o.y + o.height === obj.y && o.x <= obj.x && o.x + o.width >= obj.x + obj.width));
+      // let leftObj = !objects.filter(o => (o.x + o.width === obj.x && o.y <= obj.y && o.y + o.height >= obj.y + obj.height));
+
       this.blocks.push(block);
       this.layers[GameCanvas.OBJECTS].addChild(block);
     });

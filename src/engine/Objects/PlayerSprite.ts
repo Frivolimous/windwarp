@@ -2,6 +2,8 @@ import * as PIXI from "pixi.js";
 import { GameEvents } from "../../services/GameEvents";
 import { Firework, IExplosion } from "../../JMGE/effects/Firework";
 import _ from "lodash";
+import { Facade } from "../../main";
+import { GameCanvas } from "./GameCanvas";
 
 export class PlayerSprite extends PIXI.Container {
     public keys = {
@@ -17,8 +19,7 @@ export class PlayerSprite extends PIXI.Container {
 
     public wallGrabsRemaining = 1;
 
-    public groundState: GroundState = 'idle';
-    public standState: 'standing' | 'crouching' = 'standing';
+    public movementState: MovementState = 'idle';
 
     public vX = 0;
     public vY = 0;
@@ -63,22 +64,24 @@ export class PlayerSprite extends PIXI.Container {
     drawPlayer() {
         this.view.ellipse(this.collider.width/2, this.collider.height/2, this.collider.width/2, this.collider.height/2);
         this.view.fill(0xff6633);
+        // this.view.stroke({width: 2, color: 0});
         this.view.circle(this.collider.width / 2, this.collider.width * 0.8, this.collider.width * 0.8);
         this.view.fill(0xee1144);
+        // this.view.stroke({width: 2, color: 0}); 
     }
 
-    setGroundState(state: GroundState) {
+    setMovementState(state: MovementState) {
         if (state === 'ascending') {
             Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
-        } else if ((this.groundState === 'falling' || this.groundState === 'diving') && state === 'walking') {
+        } else if ((this.movementState === 'falling' || this.movementState === 'diving') && state === 'walking') {
             Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
         }
-        this.groundState = state;
+        this.movementState = state;
         GameEvents.ACTIVITY_LOG.publish({slug: 'PLAYER_STATE', text: state});
     }
 
     public getCollider() {
-        if (this.standState === 'crouching') {
+        if (this.movementState === 'crouching' || this.movementState === 'crawling' || this.movementState === 'rolling' || this.movementState === 'climbing-left' || this.movementState === 'climbing-right') {
             return new PIXI.Rectangle(this.x, this.y + this.collider.height / 2, this.collider.width, this.collider.height / 2);
         }
         return new PIXI.Rectangle(this.x, this.y, this.collider.width, this.collider.height);
@@ -92,7 +95,7 @@ export class PlayerSprite extends PIXI.Container {
         this.stepDelay--;
         if (this.stepDelay <= 0) {
             this.stepDelay = this.maxStepDelay;
-            if (this.groundState === 'walking' || this.groundState === 'rolling') {
+            if (this.movementState === 'walking' || this.movementState === 'rolling') {
                 // {x: this.x + this.collider.width / 2, y: this.y + this.collider.height}
                 STEP_PARTICLE.x = this.x + this.collider.width / 2;
                 STEP_PARTICLE.y = this.y + this.collider.height;
@@ -101,11 +104,11 @@ export class PlayerSprite extends PIXI.Container {
             }
         }
 
-        if (this.groundState === 'jetpacking') {
-            Firework.makeExplosion(this.parent, _.defaults(this.getMidPoint(), {count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2}));
+        if (this.movementState === 'jetpacking') {
+            Firework.makeExplosion(Facade.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), {count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2}));
         }
         
-        if (this.groundState === 'wall-grab-left' || this.groundState === 'wall-grab-right') {
+        if (this.movementState === 'wall-grab-left' || this.movementState === 'wall-grab-right') {
             this.view.skew.x = 0;
             this.view.x = 0;
             this.view.scale.y = 0.7;
@@ -113,7 +116,7 @@ export class PlayerSprite extends PIXI.Container {
             return;
         }
 
-        if (this.groundState === 'rolling') {
+        if (this.movementState === 'rolling') {
             let scale = this.view.scale.y;
             let dScale = 0.5 - scale;
             scale = scale + dScale * this.animationSpeed;
@@ -137,7 +140,7 @@ export class PlayerSprite extends PIXI.Container {
 
         this.desiredSkew = this.vX * this.skewMult;
         this.desiredVStretch = 1 + Math.min(Math.abs(this.vY) * this.vStretchMult, this.maxVStretch);
-        if (this.standState === 'crouching') {
+        if (this.movementState === 'crouching' || this.movementState === 'crawling' || this.movementState === 'climbing-left' || this.movementState === 'climbing-right') {
             this.desiredVStretch *= 0.5;
         }
         if (this.landTime > 0) {
@@ -169,5 +172,5 @@ const STEP_PARTICLE: IExplosion = {
 // };
 }
 
-export type GroundState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'rolling' |
+export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |
     'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking';

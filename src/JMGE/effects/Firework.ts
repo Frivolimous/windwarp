@@ -28,6 +28,7 @@ export class Firework {
 
       let size = _.random(config.size_min, config.size_max);
       display.width = size;
+      display.anchor.set(0.5);
       display.scale.y = display.scale.x;
       display.alpha = _.random(1, 2, true);
       display.position.set(config.x, config.y);

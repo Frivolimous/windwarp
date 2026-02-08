@@ -10,6 +10,15 @@ export class GameBlock extends PIXI.Graphics {
         this.rect(0, 0, config.width, config.height);
         this.position.set(config.x, config.y);
         this.fill(BlockColors[config.type]);
+        // this.stroke({width: 2, color: 0});
+
+        // for (let i = 40; i < config.width; i += 40) {
+        //     this.moveTo(i, 0).lineTo(i, config.height).stroke({width: 2, color: 0});
+        // }
+
+        // for (let i = 40; i < config.height; i += 40) {
+        //     this.moveTo(0, i).lineTo(config.width, i).stroke({width: 2, color: 0});
+        // }
     }
 
     randomTint() {

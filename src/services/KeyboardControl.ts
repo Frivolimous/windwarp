@@ -3,6 +3,8 @@ import _ from "lodash";
 export class KeyboardControl {
   private hotkeys: IHotkey[] = [];
 
+  private oneTimeCallback: () => void;
+
   constructor() {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
@@ -28,6 +30,11 @@ export class KeyboardControl {
       }
     });
 
+    if (this.oneTimeCallback) {
+      this.oneTimeCallback();
+      this.oneTimeCallback = null;
+    }
+
     if (e.key === ' ') e.preventDefault();
   }
 
@@ -40,6 +47,10 @@ export class KeyboardControl {
     });
 
     // e.preventDefault();
+  }
+
+  public onAnyKey(callback: () => void) {
+    this.oneTimeCallback = callback;
   }
 }
 
