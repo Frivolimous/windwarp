@@ -105,7 +105,7 @@ export class PlayerSprite extends PIXI.Container {
         }
 
         if (this.movementState === 'jetpacking') {
-            Firework.makeExplosion(Facade.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), {count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2}));
+            Firework.makeExplosion(Facade.gamePage.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), {count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2}));
         }
         
         if (this.movementState === 'wall-grab-left' || this.movementState === 'wall-grab-right') {

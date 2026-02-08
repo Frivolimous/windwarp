@@ -14,6 +14,9 @@ import { PlayerMovement } from "./PlayerMovement";
 import { GameTimer } from '../Objects/GameTimer';
 
 export class GameControl {
+    public currentLevelIndex: number = 4;
+    public player: PlayerSprite;
+
     private playerMovement: PlayerMovement;
     private gameEnvironment: GameEnvironment;
     private camera: GameCamera;
@@ -21,7 +24,6 @@ export class GameControl {
     private timer = new GameTimer();
     private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 64, fill: 0xffffff}});
     private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 64, fill: 0xffffff}}); 
-    player: PlayerSprite;
 
     constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
         this.gameEnvironment = new GameEnvironment(canvas);
@@ -60,8 +62,6 @@ export class GameControl {
             let position = e.getLocalPosition(this.canvas);
             Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], {x: position.x, y: position.y});
         });
-
-        this.loadLevel(4);
     }
 
     loopingFireworks() {
@@ -72,6 +72,8 @@ export class GameControl {
     }
 
     loadLevel(i: number) {
+        if (i < 0) return;
+        this.currentLevelIndex = i;
         this.running = true;
         let data = _.cloneDeep(LevelLoader.levelData[i]);
         this.loadLevelFromData(data);
@@ -108,6 +110,7 @@ export class GameControl {
         this.keyboard.addKey({keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false});
         this.keyboard.addKey({keys: ['p'], onDown: () => this.running = !this.running });
         this.keyboard.addKey({keys: ['r'], onDown: () => this.canvas.blocks.forEach(b => b.randomTint()) });
+        this.keyboard.addKey({keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
         for (let i = 0; i < LevelLoader.levelData.length; i++) {
             let level = i;
             this.keyboard.addKey({keys: [(level + 1).toString()], onDown: () => this.loadLevel(level)});

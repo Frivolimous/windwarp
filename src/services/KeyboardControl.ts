@@ -1,6 +1,7 @@
 import _ from "lodash";
 
 export class KeyboardControl {
+  public disabled = false;
   private hotkeys: IHotkey[] = [];
 
   private oneTimeCallback: () => void;
@@ -23,6 +24,8 @@ export class KeyboardControl {
   }
 
   public onKeyDown = (e: KeyboardEvent) => {
+    if (this.disabled) return;
+
     let key = e.key.toLowerCase();
     this.hotkeys.forEach(hotkey => {
       if (hotkey.keys.includes(key) && hotkey.onDown) {
@@ -35,10 +38,12 @@ export class KeyboardControl {
       this.oneTimeCallback = null;
     }
 
-    if (e.key === ' ') e.preventDefault();
+    if (e.key === ' ' || e.key.toLowerCase() === 'arrowdown' || e.key.toLowerCase() === 'arrowup') e.preventDefault();
   }
 
   public onKeyUp = (e: KeyboardEvent) => {
+    if (this.disabled) return;
+
     let key = e.key.toLowerCase();
     this.hotkeys.forEach(hotkey => {
       if (hotkey.keys.includes(key) && hotkey.onUp) {
@@ -50,6 +55,8 @@ export class KeyboardControl {
   }
 
   public onAnyKey(callback: () => void) {
+    if (this.disabled) return;
+
     this.oneTimeCallback = callback;
   }
 }

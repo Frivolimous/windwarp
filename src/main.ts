@@ -7,22 +7,27 @@ import { GameControl } from "./engine/Mechanics/GameControl";
 import { KeyboardControl } from "./services/KeyboardControl";
 import { TextureCache } from "./services/TextureCache";
 import { LevelLoader } from "./services/LevelLoader";
+import { MenuUI } from "./pages/MenuUI";
+import { GameUI } from "./pages/GameUI";
+import { BaseUI } from "./pages/_BaseUI";
+import { JMTween } from "./JMGE/JMTween";
 
 export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 
 export const Facade = new class {
   public app: PIXI.Application;
-  public canvas: GameCanvas;
-  public control: GameControl;
-  public keyboard: KeyboardControl;
 
   public worldBounds = new PIXI.Rectangle(0, 0, 1900, 1200);
   public scale = 0.5;
 
-  //public saveManager
+  public mainPage: MenuUI;
+  public gamePage: GameUI;
+  public blackScreen = new PIXI.Graphics();
+
+  public currentPage: BaseUI;
 
   constructor() {
-        try {
+    try {
       document.createEvent('TouchEvent');
       interactionMode = 'mobile';
     } catch (e) {}
@@ -54,13 +59,40 @@ export const Facade = new class {
   }
 
   init() {
-    this.keyboard = new KeyboardControl();
-    this.canvas = new GameCanvas(this.worldBounds.width, this.worldBounds.height, this.scale);
-    this.control = new GameControl(this.canvas, this.keyboard);
-    this.app.ticker.add(this.control.onTick);
+    this.mainPage = new MenuUI(this.worldBounds);
+    this.gamePage = new GameUI(this.worldBounds, this.app.ticker);
+    // this.mainPage.scale.set(this.scale);
+    this.gamePage.scale.set(this.scale);
 
-    this.app.stage.addChild(this.canvas);
+    this.blackScreen.rect(0, 0, this.worldBounds.width, this.worldBounds.height).fill(0);
+
+    this.setPage(this.mainPage);
+    // this.setPage(this.gamePage);
+
     GameEvents.APP_LOG.publish({type: 'INITIALIZE', text: 'Setup Complete'});
+  }
+
+  transition = false;
+  setPage(page: BaseUI) {
+    if (this.transition) return;
+    this.transition = true;
+
+    this.app.stage.addChild(this.blackScreen);
+    this.blackScreen.alpha = 0;
+    new JMTween(this.blackScreen, 200).to({alpha: 1}).start().onComplete(() => {
+      if (this.currentPage) {
+        this.currentPage.navOut();
+        this.app.stage.removeChild(this.currentPage);
+      }
+
+      this.currentPage = page;
+      this.app.stage.addChildAt(page, 0);
+      page.navIn();
+      new JMTween(this.blackScreen, 200).to({alpha: 0}).start().onComplete(() => {
+        this.app.stage.removeChild(this.blackScreen)
+        this.transition = false;
+      });
+    });
   }
 
   initializeBitmapSelect() {
@@ -79,7 +111,7 @@ export const Facade = new class {
         img.onload = () => {
           createImageBitmap(img).then(bitmap => {
             let level = LevelLoader.makeLevelData(bitmap);
-            Facade.control.loadLevelFromData(level);
+            Facade.gamePage.control.loadLevelFromData(level);
           });
         }
       }

@@ -23,7 +23,7 @@ export class GameEnvironment {
     this.objects = data.blocks;
   }
 
-  public checkWorld(rect: {x: number, y: number, width: number, height: number}, vX: number, vY: number): WorldResponse {
+  public checkWorld(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
     let response = {
       up: Infinity,
       down: Infinity,
@@ -47,50 +47,50 @@ export class GameEnvironment {
       let mX = (rect.width + obj.width) / 2;
       let mY = (rect.height + obj.height) / 2;
 
-      let oX = mX - Math.abs(dX);
-      let oY = mY - Math.abs(dY);
+      let oX = Math.abs(dX) - mX;
+      let oY = Math.abs(dY) - mY;
 
-      if (Math.abs(dX) < mX && Math.abs(dY) < mY) {
-        if (oX < oY) {
+      if (oX < 0 && oY < 0) {
+        if (oX > oY) {
           if (dX > 0) {
-            response.left = -oX;
+            response.left = oX;
             response.leftBlock = obj;
           } else {
-            response.right = -oX;
+            response.right = oX;
             response.rightBlock = obj;
           }
         } else {
           if (dY > 0) {
-            response.up = -oY;
+            response.up = oY;
             response.upBlock = obj;
           } else {
-            response.down = -oY;
+            response.down = oY;
             response.downBlock = obj;
           }
         }
       } else {
-        if (Math.abs(dX) < mX) {
+        if (oX < 0) {
           if (dY > 0) {
-            if (-oY < response.up) {
-              response.up = -oY;
+            if (oY < response.up) {
+              response.up = oY;
               response.upBlock = obj;
             }
           } else {
-            if (-oY < response.down) {
-              response.down = -oY;
+            if (oY < response.down) {
+              response.down = oY;
               response.downBlock = obj;
             }
           }
         }
-        if (Math.abs(dY) < mY) {
+        if (oY < 0) {
           if (dX > 0) {
-            if (-oX < response.left) {
-              response.left = -oX;
+            if (oX < response.left) {
+              response.left = oX;
               response.leftBlock = obj;
             }
           } else {
-            if (-oX < response.right) {
-              response.right = -oX;
+            if (oX < response.right) {
+              response.right = oX;
               response.rightBlock = obj;
             }
           }
