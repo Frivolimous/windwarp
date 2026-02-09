@@ -49,6 +49,7 @@ export class PlayerMovement {
   public setPlayer(player: PlayerSprite) {
     this.player = player;
     this.player.maxRollTime = this.rollTime;
+    this.player.maxGrabTime = this.grabTime;
   }
 
   public respawn(player: PlayerSprite) {
@@ -94,6 +95,7 @@ export class PlayerMovement {
       case 'climbing-left': case 'climbing-right': this.tickClimbing(player); break;
       case 'rolling': this.tickRolling(player); break;
       case 'jetpacking': this.tickJetpacking(player); break;
+      case 'victory': break;
     }
 
     if (this.player.keys.holdUp) {
@@ -454,7 +456,11 @@ export class PlayerMovement {
         player.y += vCollision.down;
       }
       return;
+    } else if (hCollision.left === 0 && hCollision.leftBlock){
+      let blockHeight = hCollision.leftBlock.y;
+      player.climbHeight = blockHeight - player.y;
     }
+    
     if (player.movementState === 'climbing-right' && hCollision.right > 0) {
       player.setMovementState('crouching');
       player.x += this.climbInset;
@@ -463,6 +469,9 @@ export class PlayerMovement {
         player.y += vCollision.down;
       }
       return;
+    } else if (hCollision.right === 0 && hCollision.rightBlock){
+      let blockHeight = hCollision.rightBlock.y;
+      player.climbHeight = blockHeight - player.y;
     }
   }
 
@@ -615,6 +624,7 @@ export class PlayerMovement {
           player.setMovementState('ascending');
           return true;
         } else if (vCollision.downBlock.type === 'goal') {
+          player.setMovementState('victory');
           GameEvents.LEVEL_COMPLETE.publish();
           return true;
         }

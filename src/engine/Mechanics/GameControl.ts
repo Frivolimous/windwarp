@@ -88,6 +88,7 @@ export class GameControl {
         this.gameEnvironment.setupLevel(data);
         this.canvas.resetBounds(data.width, data.height);
         this.player.position.set(data.startingPosition.x, data.startingPosition.y);
+        this.player.setMovementState('idle');
 
         this.canvas.clearObjects();
         this.canvas.addObjects(data.blocks);
@@ -119,7 +120,10 @@ export class GameControl {
     }
 
     onTick = (e: PIXI.Ticker) => {
-        if (!this.running) return;
+        if (!this.running) {
+            this.player.updateView();
+            return;
+        }
         this.timer.update(e.deltaMS);
         this.playerMovement.playerTick(this.player);
 
