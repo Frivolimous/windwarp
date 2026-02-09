@@ -80,6 +80,7 @@ export class GameControl {
     }
 
     loadLevelFromData(data: ILevelData) {
+        this.currentLevelIndex = -1;
         this.timer.reset();
         this.timer.pause();
         this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);

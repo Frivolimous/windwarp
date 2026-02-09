@@ -55,8 +55,6 @@ export class KeyboardControl {
   }
 
   public onAnyKey(callback: () => void) {
-    if (this.disabled) return;
-
     this.oneTimeCallback = callback;
   }
 }

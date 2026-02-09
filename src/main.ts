@@ -71,6 +71,7 @@ export const Facade = new class {
   transition = false;
   setPage(page: BaseUI) {
     if (this.transition) return;
+    if (page === this.currentPage) return;
     this.transition = true;
 
     this.app.stage.addChild(this.blackScreen);
@@ -94,6 +95,7 @@ export const Facade = new class {
   initializeBitmapSelect() {
     let input = document.getElementById('level-select') as HTMLInputElement;
     input.addEventListener("input", (e: BlobEvent) => {
+      console.log('input received');
       let file = (e.target as HTMLInputElement).files[0];
       
       var reader = new FileReader();
@@ -107,6 +109,7 @@ export const Facade = new class {
           createImageBitmap(img).then(bitmap => {
             let level = LevelLoader.makeLevelData(bitmap);
             Facade.gamePage.control.loadLevelFromData(level);
+            Facade.setPage(Facade.gamePage);
           });
         }
       }

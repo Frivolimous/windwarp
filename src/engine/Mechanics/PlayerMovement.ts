@@ -18,7 +18,7 @@ export class PlayerMovement {
   private divingSpeed = 10;
   private grabSlideSpeed = 0.5;
   private maxRollSpeed = 7.5;
-  private rollSpeedNeeded = 2;
+  private rollSpeedNeeded = 2.04;
   private jetpackSpeed = -0.25;
   private jetpackMaxSpeed = -5;
   private climbInset = 3;
@@ -28,14 +28,14 @@ export class PlayerMovement {
   private friction = 0.8;
   private airFriction = 0.9;
   private bounce = -0.5;
+  
   private bounceTime = 5;
   private kickTime = 15;
   private grabTime = 50;
-  private landTimeVMult = 1;
-
   private rollTime = 20;
   private rollAfterTime = 5;
-  private landTimeBase = 10;
+  private landTimeBase = 5;
+  private landTimeVMult = 1;
 
 
   private maxDoubleJumps = 1;
@@ -294,13 +294,16 @@ export class PlayerMovement {
 
     if (vCollision.down <= 0 && (player.movementState === 'falling' || player.movementState === 'diving')) {
       if (vCollision.downBlock) {
+        player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
+
         player.y += vCollision.down;
         player.vY = 0;
   
-        player.setMovementState('crawling');
+        if (player.movementState === 'diving') player.setMovementState('crawling');
+        else player.setMovementState('walking');
+        
         player.doubleJumpsRemaining = this.maxDoubleJumps;
         player.wallGrabsRemaining = this.maxWallGrabs;
-        player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
         return;
       } else {
         if (vCollision.down < -player.height) {

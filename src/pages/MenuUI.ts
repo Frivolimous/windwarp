@@ -14,7 +14,7 @@ export class MenuUI extends BaseUI {
     
     let abaLevels = new PIXI.Text({text: "Aba's Levels:", style: {fontSize: 25}});
     let aba1 = new Button({buttonLabel: 'Loopy', onClick: () => this.startLevel(0), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let aba2 = new Button({buttonLabel: 'Long One', onClick: () => this.startLevel(4), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let aba2 = new Button({buttonLabel: 'Super Obby', onClick: () => this.startLevel(4), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     abaLevels.position.set(25, 150);
     aba1.position.set(25, 190);
     aba2.position.set(25, 240);
