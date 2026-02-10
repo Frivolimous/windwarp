@@ -12,6 +12,7 @@ import { GameEnvironment } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
 import { PlayerMovement } from "./PlayerMovement";
 import { GameTimer } from '../Objects/GameTimer';
+import { InputStream } from '../../services/InputStream';
 
 export class GameControl {
     public currentLevelIndex: number = 4;
@@ -24,6 +25,8 @@ export class GameControl {
     private timer = new GameTimer();
     private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}});
     private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}}); 
+
+    private lastReplay: InputStream;
 
     constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
         this.gameEnvironment = new GameEnvironment(canvas);
@@ -80,7 +83,6 @@ export class GameControl {
     }
 
     loadLevelFromData(data: ILevelData) {
-        this.currentLevelIndex = -1;
         this.timer.reset();
         this.timer.pause();
         this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
@@ -111,6 +113,7 @@ export class GameControl {
         this.keyboard.addKey({keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false});
         this.keyboard.addKey({keys: ['p'], onDown: () => this.running = !this.running });
         this.keyboard.addKey({keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
+        this.keyboard.addKey({keys: ['enter'], onDown: () => this.loadLevel(this.currentLevelIndex)});
         for (let i = 0; i < LevelLoader.levelData.length; i++) {
             let level = i;
             this.keyboard.addKey({keys: [(level + 1).toString()], onDown: () => this.loadLevel(level)});

@@ -15,9 +15,11 @@ export class MenuUI extends BaseUI {
     let abaLevels = new PIXI.Text({text: "Aba's Levels:", style: {fontSize: 25}});
     let aba1 = new Button({buttonLabel: 'Loopy', onClick: () => this.startLevel(0), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let aba2 = new Button({buttonLabel: 'Super Obby', onClick: () => this.startLevel(4), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let aba3 = new Button({buttonLabel: 'Hurdles', onClick: () => this.startLevel(9), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     abaLevels.position.set(25, 150);
     aba1.position.set(25, 190);
     aba2.position.set(25, 240);
+    aba3.position.set(25, 290);
     
     let talyaLevels = new PIXI.Text({text: "Talya's Levels:", style: {fontSize: 25}});
     let talya1 = new Button({buttonLabel: 'The Mountains', onClick: () => this.startLevel(1), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
@@ -40,7 +42,7 @@ export class MenuUI extends BaseUI {
     ori4.position.set(525, 340);
     
     this.addChild(background, title);
-    this.addChild(abaLevels, aba1, aba2);
+    this.addChild(abaLevels, aba1, aba2, aba3);
     this.addChild(talyaLevels, talya1, talya2, talya3);
     this.addChild(oriLevels, ori1, ori2, ori3, ori4);
   }

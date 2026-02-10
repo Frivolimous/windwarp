@@ -8,13 +8,14 @@ import { JMEasing } from "../../JMGE/JMTween";
 import { LevelLoader } from "../../services/LevelLoader";
 
 export class PlayerSprite extends PIXI.Container {
-  public keys = {
+  public keys: Record<PlayerKeys, boolean> = {
     down: false,
     up: false,
     left: false,
     right: false,
     holdUp: false,
     jetpack: false,
+    dash: false,
   };
 
   public doubleJumpsRemaining = 1;
@@ -35,7 +36,7 @@ export class PlayerSprite extends PIXI.Container {
 
   public desiredSkew = 0;
   public desiredVStretch = 0;
-  private skewMult = -0.04;
+  private skewMult = -0.06;
   private vStretchMult = 0.1;
   private maxVStretch = 0.2;
   private animationSpeed = 0.2;
@@ -295,7 +296,7 @@ export class PlayerSprite extends PIXI.Container {
         break;
       case 'ascending': case 'falling':
         this.handAnimationSpeed = 0.05;
-        dly = dry = this.collider.height * (-1 - _.clamp(this.vY, -5, 10) * 0.1);
+        dly = dry = this.collider.height * (-1 - _.clamp(this.vY, -5, 5) * 0.1);
         dlx = this.collider.width * (-0.6 + this.vX * 0.2);
         drx = this.collider.width * (0.6 + this.vX * 0.2);
         break;
@@ -366,3 +367,6 @@ const STEP_PARTICLE: IExplosion = {
 
 export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |
   'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking' | 'victory';
+
+
+export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'holdUp' | 'jetpack' | 'dash';

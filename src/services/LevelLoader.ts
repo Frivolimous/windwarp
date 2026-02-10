@@ -13,6 +13,7 @@ export class LevelLoader {
     'assets/Level7.bmp',
     'assets/Level8.bmp',
     'assets/Level9.bmp',
+    'assets/Level10.bmp',
   ];
 
   static levelBitmaps: ImageBitmap[] = [];
@@ -21,8 +22,11 @@ export class LevelLoader {
   public static levelData: ILevelData[] = [];
 
   public static async setupTilemap() {
+    // let src = 'assets/TilemapBigger.png';
     let src = 'assets/TilemapBETTER.png';
     // let src = 'assets/TilemapBASIC.png';
+    // let src = 'assets/TilemapGIRL.png';
+    // let src = 'assets/TilemapBOY.png';
 
     const tilesetTexture: PIXI.TextureSource = await PIXI.Assets.load({
       src,
@@ -79,6 +83,8 @@ export class LevelLoader {
       height: bitmap.height * pixelsPerBlock,
       img: new Tilemap(this.tileTextures.map(el => el.source)),
     };
+
+    // m.img.scale.set(0.5);
 
     for (let x = 0; x < bitmap.width; x++) {
       for (let y = 0; y < bitmap.height; y++) {
@@ -152,9 +158,9 @@ enum TileMap {
 const TileMapOptions: Record<GameBlockType, any> = {
   'normal': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
   'spring': {u:20, v: 0, tileWidth: 20, tileHeight: 20},
-  'exploding': {u:40, v: 0, tileWidth: 20, tileHeight: 20},
-  'checkpoint': {u:60, v: 0, tileWidth: 20, tileHeight: 20},
-  'goal': {u:80, v: 0, tileWidth: 20, tileHeight: 20},
+  'exploding': {u:20*2, v: 0, tileWidth: 20, tileHeight: 20},
+  'checkpoint': {u:20*3, v: 0, tileWidth: 20, tileHeight: 20},
+  'goal': {u:20*4, v: 0, tileWidth: 20, tileHeight: 20},
   'ghost': {u:0, v: 20, tileWidth: 20, tileHeight: 20},
   'player': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
   'switch': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
