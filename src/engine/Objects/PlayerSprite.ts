@@ -5,6 +5,7 @@ import _ from "lodash";
 import { Facade } from "../../main";
 import { GameCanvas } from "./GameCanvas";
 import { JMEasing } from "../../JMGE/JMTween";
+import { LevelLoader } from "../../services/LevelLoader";
 
 export class PlayerSprite extends PIXI.Container {
   public keys = {
@@ -47,18 +48,16 @@ export class PlayerSprite extends PIXI.Container {
   private handsTime = 40;
   public climbHeight = 0;
 
-  private view = new PIXI.Graphics();
-  private leftHand = new PIXI.Graphics();
-  private rightHand = new PIXI.Graphics();
+  private head: PIXI.Sprite;
+  private body: PIXI.Sprite;
+  private leftHand: PIXI.Sprite;
+  private rightHand: PIXI.Sprite;
   public collider = new PIXI.Rectangle();
 
   constructor(width: number, height: number) {
     super();
 
     this.collider.set(0, 0, width, height);
-
-    this.addChild(this.view);
-    this.addChild(this.leftHand, this.rightHand);
 
     this.drawPlayer();
   }
@@ -72,14 +71,17 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   drawPlayer() {
-    this.view.ellipse(this.collider.width / 2, this.collider.height / 2, this.collider.width / 2, this.collider.height / 2);
-    this.view.fill(0xff6633);
-    this.view.stroke({ width: 2, color: 0 });
-    this.view.circle(this.collider.width / 2, this.collider.width * 0.8, this.collider.width * 0.8);
-    this.view.fill(0xee1144);
-    this.view.stroke({ width: 2, color: 0 });
-    this.leftHand.circle(0, 0, this.collider.width * 0.4).fill(0xff6633).stroke({ width: 2, color: 0 });
-    this.rightHand.circle(0, 0, this.collider.width * 0.4).fill(0xff6633).stroke({ width: 2, color: 0 });
+    this.head = new PIXI.Sprite(LevelLoader.tileTextures[19]);
+    this.body = new PIXI.Sprite(LevelLoader.tileTextures[18]);
+    this.head.anchor.set(5/20, 4/20)
+    // this.head.anchor.set(0.5);
+    this.body.anchor.set(5/20, -10/20);
+    this.leftHand = new PIXI.Sprite(LevelLoader.tileTextures[17]);
+    this.rightHand = new PIXI.Sprite(LevelLoader.tileTextures[17]);
+    this.leftHand.anchor.set(0.5);
+    this.rightHand.anchor.set(0.5);
+
+    this.addChild(this.body, this.head, this.leftHand, this.rightHand);
   }
 
   setMovementState(state: MovementState) {
@@ -105,45 +107,17 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   updateView() {
+    // if (this.vX > 0) this.head.scale.x = Math.abs(this.head.scale.x);
+    // if (this.vX < 0) this.head.scale.x = -Math.abs(this.head.scale.x);
     if (this.movementState === 'victory') {
-      this.view.skew.x = 0;
-      this.view.rotation = 0;
-
-      this.stepDelay = (this.stepDelay + 1) % 60;
-      // this.view.y = this.stepDelay * 0.1;
-      if (this.stepDelay < 30) {
-        let percent = this.stepDelay / 30;
-        this.view.scale.y = 1 - (percent) * 0.3;
-        this.view.y = this.view.scale.y
-        this.view.y = this.collider.height - this.view.scale.y * this.collider.height;
-        this.leftHand.x = 0;
-        this.rightHand.x = this.collider.width;
-        this.leftHand.y = this.rightHand.y = this.collider.height * (0.4 + percent * 0.3);
-      } else if (this.stepDelay < 45) {
-        let percent = (this.stepDelay - 30) / 15;
-        let quad = JMEasing.Quadratic.Out(percent);
-        this.view.scale.y = 1 - (1 - quad) * 0.3;
-        this.view.y = this.collider.height - this.view.scale.y * this.collider.height - quad * 15;
-        this.leftHand.y = this.rightHand.y = this.collider.height * (0.7 - quad * 1.3);
-        this.leftHand.x = this.collider.width * (0 - quad * 0.5);
-        this.rightHand.x = this.collider.width * (1 + quad * 0.5);
-      } else {
-        let percent = (this.stepDelay - 45) / 15;
-        let quad = JMEasing.Quadratic.In(percent);
-
-        this.view.scale.y = 1
-        this.view.y = - (1 - quad) * 15;
-        this.leftHand.y = this.rightHand.y = this.collider.height * (-0.5 + 1 * quad);
-        this.leftHand.x = this.collider.width * (-0.5 + 0.5 * quad);
-        this.rightHand.x = this.collider.width * (1.5 - quad * 0.5);
-      }
+      this.updateVictoryAnimation();
       return;
     }
+
     this.stepDelay--;
     if (this.stepDelay <= 0) {
       this.stepDelay = this.maxStepDelay;
       if (this.movementState === 'walking' || this.movementState === 'rolling') {
-        // {x: this.x + this.collider.width / 2, y: this.y + this.collider.height}
         STEP_PARTICLE.x = this.x + this.collider.width / 2;
         STEP_PARTICLE.y = this.y + this.collider.height;
 
@@ -158,34 +132,42 @@ export class PlayerSprite extends PIXI.Container {
     }
 
     if (this.movementState === 'wall-grab-left' || this.movementState === 'wall-grab-right') {
-      this.view.skew.x = 0;
-      this.view.x = 0;
-      this.view.scale.y = 0.8;
-      this.view.scale.x = 1.1;
+      this.body.skew.x = 0;
+      this.body.x = 0;
+      this.body.scale.y = 0.8;
+      this.body.scale.x = 1.1;
       return;
     }
 
     if (this.movementState === 'rolling') {
-      let scale = this.view.scale.y;
+      let scale = this.body.scale.y;
       let dScale = 0.5 - scale;
       scale = scale + dScale * this.animationSpeed;
-      this.view.scale.y = scale;
+      this.body.scale.y = scale;
+      this.head.scale.y = scale;
 
       let angle = (this.rollTime / this.maxRollTime) * Math.PI * 2 * Math.sign(-this.vX);
-      this.view.rotation = angle;
+      this.body.rotation = angle;
+      this.head.rotation = angle;
 
       let pivot = new PIXI.Point(this.collider.width / 2, this.collider.height * scale / 2);
       let offY = this.collider.height * (1 - scale);
       let dpX = Math.cos(angle) * pivot.x - Math.sin(angle) * pivot.y - pivot.x;
       let dpY = Math.sin(angle) * pivot.x + Math.cos(angle) * pivot.y - pivot.y;
-      this.view.x = -dpX;
-      this.view.y = -dpY + offY;
+      this.body.x = -dpX;
+      this.body.y = -dpY + offY;
+      this.head.x = -dpX;
+      this.head.y = -dpY + offY;
 
       return;
     }
 
-    this.view.rotation = 0;
-    this.view.scale.x = 1;
+    this.body.rotation = 0;
+    this.body.scale.x = 1;
+    this.head.rotation = 0;
+    this.head.scale.x = 1 * Math.sign(this.head.scale.x);
+    this.head.scale.y = 1;
+    this.head.x = 0;
 
     this.desiredSkew = this.vX * this.skewMult;
     if (this.movementState === 'crawling') this.desiredSkew *= 4;
@@ -197,15 +179,52 @@ export class PlayerSprite extends PIXI.Container {
       this.desiredVStretch *= 0.8;
     }
 
-    let skew = this.view.skew.x;
+    let skew = this.body.skew.x;
     let dSkew = this.desiredSkew - skew;
-    this.view.skew.x = skew + dSkew * this.animationSpeed;
-    this.view.x = this.view.skew.x;
+    this.body.skew.x = skew + dSkew * this.animationSpeed;
+    this.body.x = this.body.skew.x * - (5 - (1 - this.body.scale.y) * 15);
 
-    let stretch = this.view.scale.y;
+    let stretch = this.body.scale.y;
     let dStretch = this.desiredVStretch - stretch;
-    this.view.scale.y = stretch + dStretch * this.animationSpeed;
-    this.view.y = this.collider.height - this.view.scale.y * this.collider.height;
+    this.body.scale.y = stretch + dStretch * this.animationSpeed;
+    this.body.y = this.collider.height * (1 - this.body.scale.y);
+    this.head.y = this.collider.height * (1 - this.body.scale.y) * 0.7;
+  }
+
+  updateVictoryAnimation() {
+    this.body.skew.x = 0;
+    this.body.rotation = 0;
+
+    this.stepDelay = (this.stepDelay + 1) % 60;
+    if (this.stepDelay < 30) {
+      let percent = this.stepDelay / 30;
+      this.body.scale.y = 1 - (percent) * 0.3;
+      this.body.y = this.body.scale.y
+      this.body.y = this.collider.height * (1 - this.body.scale.y);
+      this.head.y = this.collider.height * (1 - this.body.scale.y) * 0.7;
+      this.leftHand.x = 0;
+      this.rightHand.x = this.collider.width;
+      this.leftHand.y = this.rightHand.y = this.collider.height * (0.4 + percent * 0.3);
+    } else if (this.stepDelay < 45) {
+      let percent = (this.stepDelay - 30) / 15;
+      let quad = JMEasing.Quadratic.Out(percent);
+      this.body.scale.y = 1 - (1 - quad) * 0.3;
+      this.body.y = this.collider.height * (1 - this.body.scale.y) - quad * 15;
+      this.head.y = this.collider.height * (1 - this.body.scale.y) * 0.7 - quad * 15;
+      this.leftHand.y = this.rightHand.y = this.collider.height * (0.7 - quad * 1.3);
+      this.leftHand.x = this.collider.width * (0 - quad * 0.5);
+      this.rightHand.x = this.collider.width * (1 + quad * 0.5);
+    } else {
+      let percent = (this.stepDelay - 45) / 15;
+      let quad = JMEasing.Quadratic.In(percent);
+
+      this.body.scale.y = 1
+      this.body.y = - (1 - quad) * 15;
+      this.head.y = - (1 - quad) * 15;
+      this.leftHand.y = this.rightHand.y = this.collider.height * (-0.5 + 1 * quad);
+      this.leftHand.x = this.collider.width * (-0.5 + 0.5 * quad);
+      this.rightHand.x = this.collider.width * (1.5 - quad * 0.5);
+    }
   }
 
   updateHands() {
@@ -318,8 +337,8 @@ export class PlayerSprite extends PIXI.Container {
         break;
     }
 
-    this.setChildIndex(this.rightHand, this.vX <= 0 ? 2 : 0);
-    this.setChildIndex(this.leftHand, this.vX >= 0 ? 2 : 0);
+    this.setChildIndex(this.rightHand, this.vX <= 0 ? 3 : 0);
+    this.setChildIndex(this.leftHand, this.vX >= 0 ? 3 : 0);
 
 
     this.leftHand.x += (dlx - this.leftHand.position.x) * this.handAnimationSpeed;
@@ -330,16 +349,7 @@ export class PlayerSprite extends PIXI.Container {
 }
 
 const STEP_PARTICLE: IExplosion = {
-  x: 0, y: 0, count: 3, tint: 0x11cc33,
-  //     const DExplosion: IExplosion = {
-  //   x: 0, y: 0, count: 20,
-  //   offRadius: 0,
-  //   angle_min: 0, angle_max: Math.PI * 2,
-  //   mag_min: 1, mag_max: 3,
-  //   fade: 0.06,
-  //   size_min: 5, size_max: 9,
-  //   tint: 0xcccccc,
-  // };
+  x: 0, y: 0, count: 3, tint: 0x11cc33
 }
 
 export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |

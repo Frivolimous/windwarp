@@ -1,4 +1,6 @@
+import * as PIXI from 'pixi.js';
 import { GameBlockType, IGameBlock } from "../engine/Objects/GameBlock";
+import { Tilemap } from "@pixi/tilemap";
 
 export class LevelLoader {
   static levelSources: string[] = [
@@ -14,23 +16,53 @@ export class LevelLoader {
   ];
 
   static levelBitmaps: ImageBitmap[] = [];
+  static mainTexture: PIXI.TextureSource;
+  static tileTextures: PIXI.Texture[] = [];
   public static levelData: ILevelData[] = [];
 
-  public static initialize(onComplete: () => void) {
-    let levelsLeft = this.levelSources.length;
-    this.levelSources.forEach((src, i) => {
-      const img = new Image(); // Create a new HTMLImageElement
-      img.src = src; // Set the source URL to start loading
+  public static async setupTilemap() {
+    // let src = 'assets/TilemapBETTER.png';
+    let src = 'assets/TilemapBASIC.png';
 
-      img.onload = () => {
-          // The image is loaded and ready for use
-          createImageBitmap(img).then(bitmap => {
-            this.levelBitmaps[i] = bitmap;
-            this.levelData[i] = this.makeLevelData(bitmap);
-            levelsLeft--;
-            if (levelsLeft === 0) onComplete();
-          });
-      };
+    const tilesetTexture: PIXI.TextureSource = await PIXI.Assets.load({
+      src,
+      data: {
+        mipmap: false,
+      }
+    });
+    const TILE_SIZE = 20;
+    const TILES_PER_ROW = tilesetTexture.width / TILE_SIZE;
+
+    this.mainTexture = tilesetTexture;
+
+    for (let i = 0; i < 20; i++) {
+      const x = (i % TILES_PER_ROW) * TILE_SIZE;
+      const y = Math.floor(i / TILES_PER_ROW) * TILE_SIZE;
+
+      this.tileTextures[i] = new PIXI.Texture({
+        source: tilesetTexture,
+        frame: new PIXI.Rectangle(x, y, TILE_SIZE, TILE_SIZE),
+      });
+    }
+  }
+
+  public static initialize(onComplete: () => void) {
+    this.setupTilemap().then(() => {
+      let levelsLeft = this.levelSources.length;
+      this.levelSources.forEach((src, i) => {
+        const img = new Image(); // Create a new HTMLImageElement
+        img.src = src; // Set the source URL to start loading
+
+        img.onload = () => {
+            // The image is loaded and ready for use
+            createImageBitmap(img).then(bitmap => {
+              this.levelBitmaps[i] = bitmap;
+              this.levelData[i] = this.makeLevelData(bitmap);
+              levelsLeft--;
+              if (levelsLeft === 0) onComplete();
+            });
+        };
+      });
     });
   }
 
@@ -45,6 +77,7 @@ export class LevelLoader {
       blocks: [],
       width: bitmap.width * pixelsPerBlock,
       height: bitmap.height * pixelsPerBlock,
+      img: new Tilemap(this.tileTextures.map(el => el.source)),
     };
 
     for (let x = 0; x < bitmap.width; x++) {
@@ -61,6 +94,7 @@ export class LevelLoader {
             height: pixelsPerBlock,
             type: type,
           });
+          type !== 'exploding' && m.img.tile(TileMap[type],x * pixelsPerBlock,y * pixelsPerBlock, TileMapOptions[type]);
         }
       }
     }
@@ -78,7 +112,7 @@ export class LevelLoader {
       } while(foundBlock);
     }
 
-      // merge blocks vertically
+    // merge blocks vertically
     for (let i = 0; i < m.blocks.length; i++) {
       let foundBlock: IGameBlock;
       do {
@@ -106,9 +140,31 @@ const ColorMapping: Record<string, GameBlockType> = {
   '0,255,255': 'checkpoint',
 }
 
+enum TileMap {
+  'normal' = 0,
+  'spring' = 1,
+  'exploding' = 2,
+  'checkpoint' = 3,
+  'goal' = 4,
+  'ghost' = 5
+}
+
+const TileMapOptions: Record<GameBlockType, any> = {
+  'normal': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
+  'spring': {u:20, v: 0, tileWidth: 20, tileHeight: 20},
+  'exploding': {u:40, v: 0, tileWidth: 20, tileHeight: 20},
+  'checkpoint': {u:60, v: 0, tileWidth: 20, tileHeight: 20},
+  'goal': {u:80, v: 0, tileWidth: 20, tileHeight: 20},
+  'ghost': {u:0, v: 20, tileWidth: 20, tileHeight: 20},
+  'player': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
+  'switch': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
+  'door': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
+}
+
 export interface ILevelData {
   blocks: IGameBlock[];
   width: number;
   height: number;
   startingPosition?: {x: number, y: number};
+  img: Tilemap;
 }

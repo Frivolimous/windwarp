@@ -2,9 +2,6 @@ import * as PIXI from "pixi.js";
 import _ from 'lodash';
 import { GameEvents } from "./services/GameEvents";
 import { Debug } from "./services/_Debug";
-import { GameCanvas } from "./engine/Objects/GameCanvas";
-import { GameControl } from "./engine/Mechanics/GameControl";
-import { KeyboardControl } from "./services/KeyboardControl";
 import { TextureCache } from "./services/TextureCache";
 import { LevelLoader } from "./services/LevelLoader";
 import { MenuUI } from "./pages/MenuUI";
@@ -37,11 +34,12 @@ export const Facade = new class {
 
   async initializeApplication() {
     this.app = new PIXI.Application();
-
     await this.app.init({
       width: this.worldBounds.width,
       height: this.worldBounds.height,
-      backgroundColor: 0x1e1e1e
+      backgroundColor: 0x1e1e1e,
+      autoDensity: true,
+      antialias: true,
     });
     let holder = document.getElementById('canvas-holder');
     holder.appendChild(this.app.canvas as HTMLCanvasElement);

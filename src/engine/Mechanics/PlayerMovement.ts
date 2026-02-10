@@ -185,7 +185,7 @@ export class PlayerMovement {
     player.vY = 0;
 
     let vCollision = this.world.checkVertical(player.getCollider());
-    this.checkIfFall(player, vCollision);
+    if (this.checkIfFall(player, vCollision)) return;
 
 
     // HORIZONTAL

@@ -90,8 +90,7 @@ export class GameControl {
         this.player.position.set(data.startingPosition.x, data.startingPosition.y);
         this.player.setMovementState('idle');
 
-        this.canvas.clearObjects();
-        this.canvas.addObjects(data.blocks);
+        this.canvas.addConfig(data);
 
         this.camera.update(this.player, true);
 
@@ -111,7 +110,6 @@ export class GameControl {
         this.keyboard.addKey({keys: ['d', 'arrowright'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false});
         this.keyboard.addKey({keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false});
         this.keyboard.addKey({keys: ['p'], onDown: () => this.running = !this.running });
-        this.keyboard.addKey({keys: ['r'], onDown: () => this.canvas.blocks.forEach(b => b.randomTint()) });
         this.keyboard.addKey({keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
         for (let i = 0; i < LevelLoader.levelData.length; i++) {
             let level = i;

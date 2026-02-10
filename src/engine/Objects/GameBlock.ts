@@ -1,18 +1,20 @@
 import * as PIXI from "pixi.js";
 import { JMTween } from "../../JMGE/JMTween";
 import { Firework } from "../../JMGE/effects/Firework";
+import { LevelLoader } from "../../services/LevelLoader";
 
-export class GameBlock extends PIXI.Graphics {
+export class GameBlock extends PIXI.Container {
     public animating = false;
     public destroyed = false;
+    public tiling: PIXI.TilingSprite;
+    public overlay = new PIXI.Graphics();
     constructor(public config: IGameBlock) {
         super();
-        this.rect(0, 0, config.width, config.height);
+        this.tiling = new PIXI.TilingSprite(LevelLoader.tileTextures[2], config.width, config.height);
+        this.addChild(this.tiling, this.overlay);
+        this.overlay.rect(0, 0, config.width, config.height);
+        this.overlay.stroke({width: 2, color: 0});
         this.position.set(config.x, config.y);
-        this.fill(BlockColors[config.type]);
-        if (config.type === 'exploding') {
-            this.stroke({width: 2, color: 0});
-        }
     }
 
     randomTint() {
@@ -43,8 +45,8 @@ export class GameBlock extends PIXI.Graphics {
         
         this.animating = true;
         this.destroyed = true;
-        // , {color: BlockColors[this.config.type], count: 20, scale: 0.5}
-        Firework.makeExplosion(this.parent, {x: this.x + this.config.width / 2, y: this.y + this.config.height / 2, tint: BlockColors[this.config.type], count: 20});
+
+        if (this.parent) Firework.makeExplosion(this.parent, {x: this.x + this.config.width / 2, y: this.y + this.config.height / 2, tint: BlockColors[this.config.type], count: 20});
     }
 }
 

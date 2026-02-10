@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import { GameBlock, IGameBlock } from "./GameBlock";
 import { colorLuminance } from "../../JMGE/others/Colors";
+import { ILevelData } from "../../services/LevelLoader";
 
 export class GameCanvas extends PIXI.Container {
   public static BACKGROUND = 0;
@@ -63,24 +64,21 @@ export class GameCanvas extends PIXI.Container {
     this.boundHeight = height;
   }
 
-  clearObjects() {
-    this.blocks.forEach(block => this.layers[GameCanvas.OBJECTS].removeChild(block));
-    this.blocks = [];
-  }
-
-  addObjects(objects: IGameBlock[]) {
-    objects.forEach(obj => {
-      let block = new GameBlock(obj);
-      
-      // let upObj = !objects.filter(o => (o.y + o.height === obj.y && o.x <= obj.x && o.x + o.width >= obj.x + obj.width));
-      // let leftObj = !objects.filter(o => (o.x + o.width === obj.x && o.y <= obj.y && o.y + o.height >= obj.y + obj.height));
-
-      this.blocks.push(block);
-      this.layers[GameCanvas.OBJECTS].addChild(block);
-    });
-
-    this.foreground.clear();
+  addConfig(data: ILevelData) {
+    this.layers[GameCanvas.OBJECTS].removeChildren()
+    this.layers[GameCanvas.OBJECTS].addChild(data.img);
     this.layers[GameCanvas.OBJECTS].addChild(this.foreground);
+    this.foreground.clear();
+
+    let objects = data.blocks;
+    objects.forEach(obj => {
+      if (obj.type === 'exploding') {
+        let block = new GameBlock(obj);
+        this.blocks.push(block);
+        this.layers[GameCanvas.OBJECTS].addChild(block);
+      }
+    });
+    
     for (let x = 0; x < this.boundWidth; x += 20) {
       for (let y = 0; y < this.boundHeight; y += 20) {
         let b1 = this.findBlockAt(objects, x, y);
