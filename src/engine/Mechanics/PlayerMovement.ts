@@ -55,8 +55,8 @@ export class PlayerMovement {
   public respawn(player: PlayerSprite) {
     let lastCheckpoint = this.world.objects.filter(obj => obj.type === 'checkpoint' && obj.x < player.x).sort((a, b) => b.x - a.x)[0];
     if (lastCheckpoint) {
-      player.x = lastCheckpoint.x + lastCheckpoint.width / 2 - player.collider.width / 2;
-      player.y = lastCheckpoint.y - player.collider.height;
+      player.x = lastCheckpoint.x + lastCheckpoint.width / 2;
+      player.y = lastCheckpoint.y;
       player.setMovementState('idle');
     } else {
       player.x = this.world.data.startingPosition.x;

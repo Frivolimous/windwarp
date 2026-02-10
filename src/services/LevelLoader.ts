@@ -21,8 +21,8 @@ export class LevelLoader {
   public static levelData: ILevelData[] = [];
 
   public static async setupTilemap() {
-    // let src = 'assets/TilemapBETTER.png';
-    let src = 'assets/TilemapBASIC.png';
+    let src = 'assets/TilemapBETTER.png';
+    // let src = 'assets/TilemapBASIC.png';
 
     const tilesetTexture: PIXI.TextureSource = await PIXI.Assets.load({
       src,
