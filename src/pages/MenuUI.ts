@@ -66,7 +66,7 @@ export class MenuUI extends BaseUI {
     this.addChild(oriLevels, ori1, ori2, ori3, ori4);
 
     this.addChild(this.playerB, this.player1Avatar, this.player2Avatar);
-    // this.addChild(this.ghostB);
+    this.addChild(this.ghostB);
   }
 
   public startLevel(i: number) {

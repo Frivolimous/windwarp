@@ -38,7 +38,6 @@ export class GameControl {
     this.gameEnvironment = new GameEnvironment(canvas);
     this.playerMovement = new PlayerMovement(this.gameEnvironment);
     this.camera = new GameCamera(this.canvas);
-    this.canvas.layers[GameCanvas.UI].addChild(this.timer);
     this.timer.position.set(Facade.worldBounds.width - 80, 20);
 
     this.levelCompleteText.anchor.set(0.5);
@@ -49,6 +48,7 @@ export class GameControl {
 
     this.player = new PlayerSprite();
     this.playerMovement.setPlayer(this.player);
+    this.player.nextSkin(0);
     this.canvas.addPlayer(this.player);
 
     this.player2 = new PlayerSprite();
@@ -96,6 +96,7 @@ export class GameControl {
   }
 
   loadLevelFromData(data: ILevelData) {
+    Facade.gamePage.addChild(this.timer);
     this.timer.reset();
     this.timer.pause();
     this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
@@ -180,8 +181,8 @@ export class GameControl {
       this.keyboard.addKey({ keys: ['s'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false });
       this.keyboard.addKey({ keys: ['d'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false });
       this.keyboard.addKey({ keys: ['x'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false });
-      this.keyboard.addKey({ keys: ['.'], onDown: () => this.player.nextSkin(1) });
-      this.keyboard.addKey({ keys: [','], onDown: () => this.player.nextSkin(-1) });
+      this.keyboard.addKey({ keys: ['q'], onDown: () => this.player.nextSkin(1) });
+      this.keyboard.addKey({ keys: ['e'], onDown: () => this.player.nextSkin(-1) });
 
       this.keyboard.addKey({ keys: ['arrowup', ' '], onDown: () => this.player2.keys.up = true, onUp: () => this.player2.keys.up = false });
       this.keyboard.addKey({ keys: ['arrowleft'], onDown: () => this.player2.keys.left = true, onUp: () => this.player2.keys.left = false });

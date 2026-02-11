@@ -14,7 +14,8 @@ export class PlayerMovement {
   private terminalVelocity = 15;
   private kickVX = 10;
   private climbSpeed = 1;
-  private minGrabSpeed = 2;
+  private minGrabSpeedX = 2;
+  private maxGrabSpeedY = -1;
   private divingSpeed = 10;
   private grabSlideSpeed = 0.5;
   private maxRollSpeed = 7.5;
@@ -30,6 +31,7 @@ export class PlayerMovement {
   private bounce = -0.5;
   
   private bounceTime = 5;
+  private airBounceTime = 1;
   private kickTime = 15;
   private grabTime = 50;
   private rollTime = 20;
@@ -350,7 +352,7 @@ export class PlayerMovement {
     let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
     let hTopCollision = this.world.checkHorizontal(player.getTopCollider(), !player.isGhost);
 
-    if (hCollision.left < 0) {
+    if (hCollision.left <= 0) {
       player.x -= hCollision.left;
       if (hCollision.leftBlock && (hCollision.leftBlock.type === 'spring' || hCollision.leftBlock.type === 'exploding')) {
         if (hCollision.leftBlock.type === 'exploding') {
@@ -365,7 +367,7 @@ export class PlayerMovement {
         player.vX = 0;
         player.vY = 0;
         player.setMovementState('climbing-left');
-      } else if (player.wallGrabsRemaining > 0 && !player.keys.right && player.vX < -this.minGrabSpeed) {
+      } else if (player.wallGrabsRemaining > 0 && (!player.keys.right && player.vX < -this.minGrabSpeedX) || (player.keys.left && player.vY < 0 && player.vY > this.maxGrabSpeedY)) {
         player.vX = 0;
         player.vY = 0;
         player.wallGrabsRemaining--;
@@ -373,11 +375,11 @@ export class PlayerMovement {
         player.setMovementState('wall-grab-left');
       } else if (player.vX < 0) {
         player.vX = this.bounce * player.vX;
-        player.bounceTime = this.bounceTime;
+        player.bounceTime = this.airBounceTime;
       }
     }
 
-    if (hCollision.right < 0) {
+    if (hCollision.right <= 0) {
       player.x += hCollision.right;
       if (hCollision.rightBlock && (hCollision.rightBlock.type === 'spring' || hCollision.rightBlock.type === 'exploding')) {
         if (hCollision.rightBlock.type === 'exploding') {
@@ -392,7 +394,7 @@ export class PlayerMovement {
         player.vX = 0;
         player.vY = 0;
         player.setMovementState('climbing-right');
-      } else if (player.wallGrabsRemaining > 0 && !player.keys.left && player.vX > this.minGrabSpeed) {
+      } else if (player.wallGrabsRemaining > 0 && ((!player.keys.left && player.vX > this.minGrabSpeedX) || (player.keys.right && player.vY < 0 && player.vY > this.maxGrabSpeedY))) {
         player.vX = 0;
         player.vY = 0;
         player.wallGrabsRemaining--;
@@ -400,7 +402,7 @@ export class PlayerMovement {
         player.setMovementState('wall-grab-right');
       } else if (player.vX > 0) {
         player.vX = this.bounce * player.vX;
-        player.bounceTime = this.bounceTime;
+        player.bounceTime = this.airBounceTime;
       }
     }
 

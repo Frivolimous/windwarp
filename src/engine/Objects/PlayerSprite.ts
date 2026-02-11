@@ -37,8 +37,6 @@ export class PlayerSprite extends PIXI.Container {
   public maxGrabTime = 10;
   public landTime = 0;
 
-  public desiredSkew = 0;
-  public desiredVStretch = 0;
   private skewMult = -0.06;
   private vStretchMult = 0.1;
   private maxVStretch = 0.2;
@@ -89,12 +87,13 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   drawPlayer() {
-    this.head = new PIXI.Sprite(LevelLoader.tileTextures[19]);
-    this.body = new PIXI.Sprite(LevelLoader.tileTextures[18]);
+    this.head = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.body = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.head.anchor.set(0.5, 1 + 14/20); //4/20
     this.body.anchor.set(0.5, 1); // -10/20 //6/20
-    this.leftHand = new PIXI.Sprite(LevelLoader.tileTextures[17]);
-    this.rightHand = new PIXI.Sprite(LevelLoader.tileTextures[17]);
+    this.leftHand = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.rightHand = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.rightHand.scale.x = -1;
     this.leftHand.anchor.set(0.5);
     this.rightHand.anchor.set(0.5);
 
@@ -159,14 +158,6 @@ export class PlayerSprite extends PIXI.Container {
 
     this.updateHands();
 
-    if (this.movementState === 'idle') {
-      let percent = this.handsTick / this.handsTime;
-      percent = (Math.abs(percent * 2 - 1));
-      this.scale.y = 1 - percent * 0.1;
-
-      return;
-    }
-
     if (this.movementState === 'jetpacking') {
       Firework.makeExplosion(Facade.gamePage.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), { count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2 }));
     }
@@ -175,6 +166,7 @@ export class PlayerSprite extends PIXI.Container {
       this.body.skew.x = 0;
       this.body.x = 0;
       this.body.scale.y = 0.8;
+      this.head.y = 0;
       this.body.scale.x = 1.1;
       this.body.y = -this.body.height * 0.4;
       return;
@@ -218,24 +210,34 @@ export class PlayerSprite extends PIXI.Container {
     this.head.scale.y = 1;
     this.head.x = 0;
 
-    this.desiredSkew = this.vX * this.skewMult;
-    if (this.movementState === 'crawling') this.desiredSkew *= 4;
-    this.desiredVStretch = 1 + Math.min(Math.abs(this.vY) * this.vStretchMult, this.maxVStretch);
+    let desiredSkew = this.vX * this.skewMult;
+    let desiredVStretch = 1;
+    if (this.movementState === 'crawling') desiredSkew *= 4;
+
+    desiredVStretch = 1 + Math.min(Math.abs(this.vY) * this.vStretchMult, this.maxVStretch);
     if (this.movementState === 'crouching' || this.movementState === 'crawling' || this.movementState === 'climbing-left' || this.movementState === 'climbing-right') {
-      this.desiredVStretch *= 0.5;
+      desiredVStretch *= 0.5;
     }
+
+    if (this.movementState === 'idle') {
+      let percent = this.handsTick / this.handsTime;
+      percent = (Math.abs(percent * 2 - 1));
+      desiredVStretch += -0.02 + percent * 0.04;
+      // this.body.scale.y = 1 - percent * 0.1;
+      // this.head.y = 0;
+    }
+
     if (this.landTime > 0) {
-      this.desiredVStretch *= 0.8;
+      desiredVStretch *= 0.8;
     }
 
     let skew = this.body.skew.x;
-    let dSkew = this.desiredSkew - skew;
+    let dSkew = desiredSkew - skew;
     this.body.skew.x = skew + dSkew * this.animationSpeed;
     this.body.x = this.body.skew.x * (20 - (1 - this.body.scale.y) * 15);
-    // - (5 - (1 - this.body.scale.y) * 15)
 
     let stretch = this.body.scale.y;
-    let dStretch = this.desiredVStretch - stretch;
+    let dStretch = desiredVStretch - stretch;
     this.body.scale.y = stretch + dStretch * this.animationSpeed;
     this.body.y = 0;
     this.head.y = this.collider.height * (1 - this.body.scale.y) * 0.7;
@@ -290,10 +292,13 @@ export class PlayerSprite extends PIXI.Container {
       case 'idle':
         this.handAnimationSpeed = 0.2;
         //BREATHE
-        dly = this.collider.height * (-0.4);
-        dry = this.collider.height * (-0.4);
-        dlx = this.collider.width * (-0.6);
-        drx = this.collider.width * (0.6);
+        let iPercent = this.handsTick / this.handsTime;
+        let ia = (Math.abs(iPercent * 2 - 1));
+
+        dly = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
+        dry = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
+        dlx = this.collider.width * (-0.7 - 0.03 * (1-ia));
+        drx = this.collider.width * (0.7 + 0.03 * (1-ia));
 
         //DANCE
         // let a = this.handsTick / this.handsTime * Math.PI * 2;

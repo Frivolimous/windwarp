@@ -65,12 +65,10 @@ export class SpriteButton extends PIXI.Container {
     this.addListener('mouseover', () => {
       if (this._Disabled) return;
       this.background.tint = colorLuminance(this.color, 0.8);
-      // this.inner.scale.set(1 + this.config.hoverScale);
     });
     this.addListener('mouseout', () => {
       if (this._Disabled) return;
       this.background.tint = this.color;
-      // this.inner.scale.set(1);
     });
     this.addListener('mouseup', (e) => {
       if (this._Disabled) return;
