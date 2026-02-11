@@ -13,10 +13,13 @@ export class PlayerSprite extends PIXI.Container {
     up: false,
     left: false,
     right: false,
-    holdUp: false,
     jetpack: false,
     dash: false,
   };
+
+  public holdUp = false;
+  public isGhost = false;
+  public skinIndex = 0;
 
   public doubleJumpsRemaining = 1;
 
@@ -49,19 +52,32 @@ export class PlayerSprite extends PIXI.Container {
   private handsTime = 40;
   public climbHeight = 0;
 
-  private head: PIXI.Sprite;
-  private body: PIXI.Sprite;
-  private leftHand: PIXI.Sprite;
-  private rightHand: PIXI.Sprite;
+  public head: PIXI.Sprite;
+  public body: PIXI.Sprite;
+  public leftHand: PIXI.Sprite;
+  public rightHand: PIXI.Sprite;
   public collider = new PIXI.Rectangle();
 
-  constructor(width: number, height: number) {
+  constructor() {
     super();
-
-    // this.collider.set(0, 0, width, height);
+    let width = 8;
+    let height = 30;
+    
     this.collider.set(-width / 2, -height, width, height);
 
     this.drawPlayer();
+  }
+
+  reset() {
+    this.bounceTime = this.rollTime = this.grabTime = this.landTime = 0;
+  }
+
+  makeGhost() {
+    this.head.alpha = 0.4;
+    this.body.alpha = 0.4;
+    this.leftHand.alpha = 0.4;
+    this.rightHand.alpha = 0.4;
+    this.isGhost = true;
   }
 
   getMidPoint() {
@@ -85,6 +101,19 @@ export class PlayerSprite extends PIXI.Container {
     this.addChild(this.body, this.head, this.leftHand, this.rightHand);
     // this.leftHand.visible = false;
     // this.rightHand.visible = false;
+  }
+
+  nextSkin(i: number) {
+    this.skinIndex = (this.skinIndex + i + LevelLoader.skins.length) % LevelLoader.skins.length;
+    
+    this.loadSkin(LevelLoader.skins[this.skinIndex]);
+  }
+
+  loadSkin(skin: PIXI.Texture[]) {
+    this.head.texture = skin[2];
+    this.body.texture = skin[1];
+    this.leftHand.texture = skin[0];
+    this.rightHand.texture = skin[0];
   }
 
   setMovementState(state: MovementState) {
@@ -129,6 +158,14 @@ export class PlayerSprite extends PIXI.Container {
     }
 
     this.updateHands();
+
+    if (this.movementState === 'idle') {
+      let percent = this.handsTick / this.handsTime;
+      percent = (Math.abs(percent * 2 - 1));
+      this.scale.y = 1 - percent * 0.1;
+
+      return;
+    }
 
     if (this.movementState === 'jetpacking') {
       Firework.makeExplosion(Facade.gamePage.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), { count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2 }));
@@ -250,14 +287,21 @@ export class PlayerSprite extends PIXI.Container {
     let dry = 0;
 
     switch(this.movementState) {
-      case 'idle': 
+      case 'idle':
         this.handAnimationSpeed = 0.2;
-        let a = this.handsTick / this.handsTime * Math.PI * 2;
-        let m = this.collider.width * 0.2;
-        dlx = -this.collider.width * 0.6 + Math.cos(a) * m;
-        dly = -this.collider.height * 0.4 + Math.sin(a) * m;
-        drx = this.collider.width * 0.6 - Math.cos(a + Math.PI) * m;
-        dry = -this.collider.height * 0.4 + Math.sin(a + Math.PI) * m;
+        //BREATHE
+        dly = this.collider.height * (-0.4);
+        dry = this.collider.height * (-0.4);
+        dlx = this.collider.width * (-0.6);
+        drx = this.collider.width * (0.6);
+
+        //DANCE
+        // let a = this.handsTick / this.handsTime * Math.PI * 2;
+        // let m = this.collider.width * 0.2;
+        // dlx = -this.collider.width * 0.6 + Math.cos(a) * m;
+        // dly = -this.collider.height * 0.4 + Math.sin(a) * m;
+        // drx = this.collider.width * 0.6 - Math.cos(a + Math.PI) * m;
+        // dry = -this.collider.height * 0.4 + Math.sin(a + Math.PI) * m;
         break;
       case 'walking':
         this.handAnimationSpeed = 1;
@@ -369,4 +413,4 @@ export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'divi
   'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking' | 'victory';
 
 
-export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'holdUp' | 'jetpack' | 'dash';
+export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';

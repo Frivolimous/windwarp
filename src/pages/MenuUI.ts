@@ -2,8 +2,15 @@ import * as PIXI from 'pixi.js';
 import { BaseUI } from './_BaseUI';
 import { Button } from '../ui/Button';
 import { Facade } from '../main';
+import { SpriteButton } from '../ui/SpriteButton';
+import { LevelLoader } from '../services/LevelLoader';
 
 export class MenuUI extends BaseUI {
+  playerB: Button;
+  ghostB: Button;
+  player1Avatar: SpriteButton;
+  player2Avatar: SpriteButton;
+
   constructor(bounds: PIXI.Rectangle) {
     super();
     let background = new PIXI.Graphics();
@@ -40,16 +47,63 @@ export class MenuUI extends BaseUI {
     ori2.position.set(525, 240);
     ori3.position.set(525, 290);
     ori4.position.set(525, 340);
-    
+
+    this.ghostB = new Button({buttonLabel: 'No Ghost', onClick: this.toggleGhost, color: 0x00ccff, width: 90, height: 30, labelStyle: {fontSize: 15 }});
+    this.ghostB.position.set(50, 505);
+
+    this.playerB = new Button({buttonLabel: 'One Player', onClick: this.togglePlayerCount, color: 0xccff66, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    this.playerB.position.set(275, 500);
+
+    this.player1Avatar = new SpriteButton({texture: LevelLoader.skins[0][2], onClick: () => this.toggleAvatar(0), color: 0xffcc00, width: 40, height: 40, spriteScale: 0.9});
+    this.player2Avatar = new SpriteButton({texture: LevelLoader.skins[3][2], onClick: () => this.toggleAvatar(1), color: 0xee8833, width: 40, height: 40, spriteScale: 0.9});
+    this.player1Avatar.position.set(435, 500);
+    this.player2Avatar.position.set(485, 500);
+    this.player2Avatar.visible = false;
+
     this.addChild(background, title);
     this.addChild(abaLevels, aba1, aba2, aba3);
     this.addChild(talyaLevels, talya1, talya2, talya3);
     this.addChild(oriLevels, ori1, ori2, ori3, ori4);
+
+    this.addChild(this.playerB, this.player1Avatar, this.player2Avatar);
+    // this.addChild(this.ghostB);
   }
 
   public startLevel(i: number) {
     Facade.gamePage.control.loadLevel(i);
     Facade.setPage(Facade.gamePage);
+  }
+
+  public togglePlayerCount = () => {
+    Facade.gamePage.control.togglePlayerCount();
+    if (Facade.gamePage.control.TWO_PLAYER) {
+      this.playerB.addLabel('Two Players');
+      this.player2Avatar.visible = true;
+    } else {
+      this.playerB.addLabel('One Player');
+      this.player2Avatar.visible = false;
+    }
+  }
+
+  public toggleAvatar(playerIndex = 0) {
+    if (playerIndex === 0) {
+      let player = Facade.gamePage.control.player;
+      player.nextSkin(1);
+      this.player1Avatar.addTexture(player.head.texture);
+    } else {
+      let player = Facade.gamePage.control.player2;
+      player.nextSkin(1);
+      this.player2Avatar.addTexture(player.head.texture);
+    }
+  }
+
+  public toggleGhost = () => {
+      // GHOST_MODE: 'off' | 'live' | 'replay' = 'off';
+    switch(Facade.gamePage.control.GHOST_MODE) {
+      case 'off': Facade.gamePage.control.GHOST_MODE = 'live'; this.ghostB.addLabel('Live Ghost'); break;
+      case 'live': Facade.gamePage.control.GHOST_MODE = 'replay'; this.ghostB.addLabel('Replay'); break;
+      case 'replay': Facade.gamePage.control.GHOST_MODE = 'off'; this.ghostB.addLabel('No Ghost'); break;
+    }
   }
 
   public navIn = () => {

@@ -12,7 +12,12 @@ export class KeyboardControl {
   }
 
   public destroy() {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+  }
 
+  public clear() {
+    this.hotkeys = [];
   }
 
   public addKey(hotkey: IHotkey) {
@@ -37,8 +42,8 @@ export class KeyboardControl {
       this.oneTimeCallback();
       this.oneTimeCallback = null;
     }
-
-    if (e.key === ' ' || e.key.toLowerCase() === 'arrowdown' || e.key.toLowerCase() === 'arrowup') e.preventDefault();
+    e.preventDefault();
+    // if (e.key === ' ' || e.key.toLowerCase() === 'arrowdown' || e.key.toLowerCase() === 'arrowup') e.preventDefault();
   }
 
   public onKeyUp = (e: KeyboardEvent) => {

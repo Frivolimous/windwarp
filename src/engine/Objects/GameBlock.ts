@@ -5,9 +5,9 @@ import { LevelLoader } from "../../services/LevelLoader";
 
 export class GameBlock extends PIXI.Container {
     public animating = false;
-    public destroyed = false;
     public tiling: PIXI.TilingSprite;
     public overlay = new PIXI.Graphics();
+
     constructor(public config: IGameBlock) {
         super();
         this.tiling = new PIXI.TilingSprite(LevelLoader.tileTextures[2], config.width, config.height);
@@ -23,7 +23,6 @@ export class GameBlock extends PIXI.Container {
 
     shrinkAway(then?: () => void) {
         if (this.animating) return;
-        if (this.destroyed) return;
 
         this.animating = true;
         let oHeight = this.config.height;
@@ -34,17 +33,14 @@ export class GameBlock extends PIXI.Container {
             this.config.y = oY + oHeight - this.config.height;
         })
         .onComplete(() => {
-            this.destroyed = true;
             then && then();
         }).start();
     }
 
     explode() {
         if (this.animating) return;
-        if (this.destroyed) return;
-        
+        this.visible = false;
         this.animating = true;
-        this.destroyed = true;
 
         if (this.parent) Firework.makeExplosion(this.parent, {x: this.x + this.config.width / 2, y: this.y + this.config.height / 2, tint: BlockColors[this.config.type], count: 20});
     }
@@ -69,6 +65,9 @@ export interface IGameBlock {
     height: number;
     type: GameBlockType;
     subtype?: string;
+    usedByPlayer?: boolean;
+    usedbyGhost?: boolean;
+
 }
 
 export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | "player" | "goal" | "ghost" | "checkpoint";

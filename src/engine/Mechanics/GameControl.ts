@@ -15,126 +15,239 @@ import { GameTimer } from '../Objects/GameTimer';
 import { InputStream } from '../../services/InputStream';
 
 export class GameControl {
-    public currentLevelIndex: number = 4;
-    public player: PlayerSprite;
+  GHOST_MODE: 'off' | 'live' | 'replay' = 'off';
+  TWO_PLAYER = false;
+  public currentLevelIndex: number = 4;
+  s
+  public player: PlayerSprite;
+  public player2: PlayerSprite;
+  public ghostPlayer: PlayerSprite;
 
-    private playerMovement: PlayerMovement;
-    private gameEnvironment: GameEnvironment;
-    private camera: GameCamera;
-    private running = true;
-    private timer = new GameTimer();
-    private levelCompleteText = new PIXI.Text({text:'Level Complete!', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}});
-    private gameStartText = new PIXI.Text({text:'Press any key to start', style:{fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 }}}); 
+  private playerMovement: PlayerMovement;
+  private gameEnvironment: GameEnvironment;
+  private camera: GameCamera;
+  private running = true;
+  private timer = new GameTimer();
+  private levelCompleteText = new PIXI.Text({ text: 'Level Complete!', style: { fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 } } });
+  private gameStartText = new PIXI.Text({ text: 'Press any key to start', style: { fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 } } });
 
-    private lastReplay: InputStream;
+  private recordingStream: InputStream;
+  private replayingStream: InputStream;
 
-    constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
-        this.gameEnvironment = new GameEnvironment(canvas);
-        this.playerMovement = new PlayerMovement(this.gameEnvironment);
-        this.camera = new GameCamera(this.canvas);
-        this.player = new PlayerSprite(8, 30);
-        this.playerMovement.setPlayer(this.player);
-        this.canvas.addPlayer(this.player);
-        this.canvas.layers[GameCanvas.UI].addChild(this.timer);
-        this.timer.position.set(Facade.worldBounds.width - 80, 20);
+  constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
+    this.gameEnvironment = new GameEnvironment(canvas);
+    this.playerMovement = new PlayerMovement(this.gameEnvironment);
+    this.camera = new GameCamera(this.canvas);
+    this.canvas.layers[GameCanvas.UI].addChild(this.timer);
+    this.timer.position.set(Facade.worldBounds.width - 80, 20);
 
-        this.levelCompleteText.anchor.set(0.5);
-        this.levelCompleteText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
+    this.levelCompleteText.anchor.set(0.5);
+    this.levelCompleteText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
 
-        this.gameStartText.anchor.set(0.5);
-        this.gameStartText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
+    this.gameStartText.anchor.set(0.5);
+    this.gameStartText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
 
-        this.setupKeys();
+    this.player = new PlayerSprite();
+    this.playerMovement.setPlayer(this.player);
+    this.canvas.addPlayer(this.player);
 
-        GameEvents.SWITCH_ACTIVATED.addListener((block: IGameBlock) => {
-            let subtype = block.subtype;
-            this.canvas.blocks.forEach(obj => {
-                if (obj.config.type === 'door' && obj.config.subtype === subtype) {
-                    obj.shrinkAway();
-                }
-            });
-        });
+    this.player2 = new PlayerSprite();
+    this.playerMovement.setPlayer(this.player2);
+    this.player2.nextSkin(3);
+    
+    GameEvents.SWITCH_ACTIVATED.addListener((block: IGameBlock) => {
+      let subtype = block.subtype;
+      this.canvas.blocks.forEach(obj => {
+        if (obj.config.type === 'door' && obj.config.subtype === subtype) {
+          obj.shrinkAway();
+        }
+      });
+    });
 
-        GameEvents.LEVEL_COMPLETE.addListener(() => {
-            this.running = false;
-            this.loopingFireworks();
-            this.levelCompleteText.text = `Level Complete!\n  Time: ${(this.timer.getTime() / 1000).toFixed(2)}s`;
-            this.canvas.layers[GameCanvas.UI].addChild(this.levelCompleteText);
-        });
-        this.canvas.addEventListener('mousedown', e => {
-            let position = e.getLocalPosition(this.canvas);
-            Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], {x: position.x, y: position.y});
-        });
+    GameEvents.LEVEL_COMPLETE.addListener(() => {
+      this.running = false;
+      this.loopingFireworks();
+      this.levelCompleteText.text = `Level Complete!\n  Time: ${(this.timer.getTime() / 1000).toFixed(2)}s`;
+      this.canvas.layers[GameCanvas.UI].addChild(this.levelCompleteText);
+    });
+    this.canvas.addEventListener('mousedown', e => {
+      let position = e.getLocalPosition(this.canvas);
+      Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: position.x, y: position.y });
+    });
+  }
+
+  togglePlayerCount = () => {
+    this.TWO_PLAYER = !this.TWO_PLAYER;
+  }
+
+  loopingFireworks() {
+    setTimeout(() => {
+      Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: Math.random() * this.camera.viewWidth, y: Math.random() * this.camera.viewHeight, tint: Math.random() * 0xffffff });
+      if (!this.running) this.loopingFireworks();
+    }, 50);
+  }
+
+  loadLevel(i: number) {
+    if (i < 0) return;
+    this.currentLevelIndex = i;
+    this.running = true;
+    let data = _.cloneDeep(LevelLoader.levelData[i]);
+    this.loadLevelFromData(data);
+  }
+
+  loadLevelFromData(data: ILevelData) {
+    this.timer.reset();
+    this.timer.pause();
+    this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
+
+    this.gameEnvironment.setupLevel(data);
+    this.canvas.resetBounds(data.width, data.height);
+    this.canvas.addConfig(data);
+
+    this.player.position.set(data.startingPosition.x, data.startingPosition.y);
+    this.player.reset();
+    this.player.setMovementState('idle');
+    
+    if (this.TWO_PLAYER) {
+      this.player2.position.set(data.startingPosition.x, data.startingPosition.y);
+      this.player2.reset();
+      this.player2.setMovementState('idle');
+      this.canvas.addPlayer(this.player2);
+    } else {
+      this.canvas.removePlayer(this.player2);
     }
 
-    loopingFireworks() {
-        setTimeout(() => {
-            Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], {x: Math.random() * this.camera.viewWidth, y: Math.random() * this.camera.viewHeight, tint: Math.random() * 0xffffff});
-            if (!this.running) this.loopingFireworks();
-        }, 50);
-    }
+    this.setupKeys();
+    this.setupGhost(data);
 
-    loadLevel(i: number) {
-        if (i < 0) return;
-        this.currentLevelIndex = i;
+    this.camera.update(this.player, true);
+
+    this.running = false;
+    window.requestAnimationFrame(() => {
+      this.canvas.layers[GameCanvas.UI].addChild(this.gameStartText);
+      this.keyboard.onAnyKey(() => {
         this.running = true;
-        let data = _.cloneDeep(LevelLoader.levelData[i]);
-        this.loadLevelFromData(data);
+        this.gameStartText.parent.removeChild(this.gameStartText);
+        this.timer.start();
+      });
+    });
+  }
+
+  addGhostPlayer() {
+    if (!this.ghostPlayer) {
+        this.ghostPlayer = new PlayerSprite();
+        this.ghostPlayer.makeGhost();
+        this.playerMovement.setPlayer(this.ghostPlayer);
+        this.canvas.layers[GameCanvas.PLAYER].addChildAt(this.ghostPlayer, 0);
+    }
+  }
+
+  setupGhost(data: ILevelData) {
+    if (this.GHOST_MODE === 'replay') {
+      if (this.recordingStream && this.recordingStream.mapId === this.currentLevelIndex) {
+        this.replayingStream = this.recordingStream;
+        this.replayingStream.resetPlayback();
+
+        this.addGhostPlayer();
+
+        this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
+        this.ghostPlayer.reset();
+        this.ghostPlayer.setMovementState('idle');
+      }
+
+      this.recordingStream = new InputStream(this.currentLevelIndex);
+    } else if (this.GHOST_MODE === 'live') {
+      let stream = new InputStream(this.currentLevelIndex);
+      this.recordingStream = stream;
+      this.replayingStream = stream;
+      stream.resetPlayback();
+      stream.replayingStep = -50;
+
+      this.addGhostPlayer();
+
+      this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
+      this.ghostPlayer.reset();
+      this.ghostPlayer.setMovementState('idle');
+    }
+  }
+
+  setupKeys() {
+    this.keyboard.clear();
+
+    if (this.TWO_PLAYER) {
+      this.keyboard.addKey({ keys: ['w'], onDown: () => this.player.keys.up = true, onUp: () => this.player.keys.up = false });
+      this.keyboard.addKey({ keys: ['a'], onDown: () => this.player.keys.left = true, onUp: () => this.player.keys.left = false });
+      this.keyboard.addKey({ keys: ['s'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false });
+      this.keyboard.addKey({ keys: ['d'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false });
+      this.keyboard.addKey({ keys: ['x'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false });
+      this.keyboard.addKey({ keys: ['.'], onDown: () => this.player.nextSkin(1) });
+      this.keyboard.addKey({ keys: [','], onDown: () => this.player.nextSkin(-1) });
+
+      this.keyboard.addKey({ keys: ['arrowup', ' '], onDown: () => this.player2.keys.up = true, onUp: () => this.player2.keys.up = false });
+      this.keyboard.addKey({ keys: ['arrowleft'], onDown: () => this.player2.keys.left = true, onUp: () => this.player2.keys.left = false });
+      this.keyboard.addKey({ keys: ['arrowdown'], onDown: () => this.player2.keys.down = true, onUp: () => this.player2.keys.down = false });
+      this.keyboard.addKey({ keys: ['arrowright'], onDown: () => this.player2.keys.right = true, onUp: () => this.player2.keys.right = false });
+      this.keyboard.addKey({ keys: ['/', 'v'], onDown: () => this.player2.keys.jetpack = true, onUp: () => this.player2.keys.jetpack = false });
+      this.keyboard.addKey({ keys: ['.'], onDown: () => this.player2.nextSkin(1) });
+      this.keyboard.addKey({ keys: [','], onDown: () => this.player2.nextSkin(-1) });
+    } else {
+      this.keyboard.addKey({ keys: ['w', ' ', 'arrowup'], onDown: () => this.player.keys.up = true, onUp: () => this.player.keys.up = false });
+      this.keyboard.addKey({ keys: ['a', 'arrowleft'], onDown: () => this.player.keys.left = true, onUp: () => this.player.keys.left = false });
+      this.keyboard.addKey({ keys: ['s', 'arrowdown', 'control'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false });
+      this.keyboard.addKey({ keys: ['d', 'arrowright'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false });
+      this.keyboard.addKey({ keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false });
+      this.keyboard.addKey({ keys: ['.'], onDown: () => this.player.nextSkin(1) });
+      this.keyboard.addKey({ keys: [','], onDown: () => this.player.nextSkin(-1) });
     }
 
-    loadLevelFromData(data: ILevelData) {
-        this.timer.reset();
-        this.timer.pause();
-        this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
+    this.keyboard.addKey({ keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
+    this.keyboard.addKey({ keys: ['enter'], onDown: () => this.loadLevel(this.currentLevelIndex) });
+    this.keyboard.addKey({ keys: ['p'], onDown: () => this.running = !this.running });
 
-        this.gameEnvironment.setupLevel(data);
-        this.canvas.resetBounds(data.width, data.height);
-        this.player.position.set(data.startingPosition.x, data.startingPosition.y);
-        this.player.setMovementState('idle');
+    for (let i = 0; i < LevelLoader.levelData.length; i++) {
+      let level = i;
+      this.keyboard.addKey({ keys: [(level + 1).toString()], onDown: () => this.loadLevel(level) });
+    }
+  }
 
-        this.canvas.addConfig(data);
+  onTick = (e: PIXI.Ticker) => {
+    if (!this.running) {
+      this.player.updateView();
+      this.player2 && this.player2.updateView();
+      return;
+    }
+    this.timer.update(e.deltaMS);
 
-        this.camera.update(this.player, true);
-
-        window.requestAnimationFrame(() => {
-            this.canvas.layers[GameCanvas.UI].addChild(this.gameStartText);
-            this.keyboard.onAnyKey(() => {
-                this.gameStartText.parent.removeChild(this.gameStartText);
-                this.timer.start();
-            });
-        });
+    if (this.ghostPlayer && this.replayingStream) {
+      this.replayingStream.playStep(this.ghostPlayer);
+      this.logPlayer(this.ghostPlayer, this.recordingStream.replayingStep);
+      
+      this.playerMovement.playerTick(this.ghostPlayer);
+      this.ghostPlayer.updateView();
+    }
+    if (this.recordingStream) {
+      this.recordingStream.recordStep(this.player);
+      this.logPlayer(this.player, this.recordingStream.recordingStep);
+    }
+    this.playerMovement.playerTick(this.player);
+    this.player.updateView();
+    
+    if (this.TWO_PLAYER) {
+      this.playerMovement.playerTick(this.player2);
+      this.player2.updateView();
+      this.camera.updateTwo(this.player, this.player2);
+    } else {
+      this.camera.update(this.player);
     }
 
-    setupKeys() {
-        this.keyboard.addKey({keys: ['w', ' ', 'arrowup'], onDown: () => this.player.keys.up = true, onUp: () => this.player.keys.up = false});
-        this.keyboard.addKey({keys: ['a', 'arrowleft'], onDown: () => this.player.keys.left = true, onUp: () => this.player.keys.left = false});
-        this.keyboard.addKey({keys: ['s', 'arrowdown', 'control'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false});
-        this.keyboard.addKey({keys: ['d', 'arrowright'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false});
-        this.keyboard.addKey({keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false});
-        this.keyboard.addKey({keys: ['p'], onDown: () => this.running = !this.running });
-        this.keyboard.addKey({keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
-        this.keyboard.addKey({keys: ['enter'], onDown: () => this.loadLevel(this.currentLevelIndex)});
-        for (let i = 0; i < LevelLoader.levelData.length; i++) {
-            let level = i;
-            this.keyboard.addKey({keys: [(level + 1).toString()], onDown: () => this.loadLevel(level)});
-        }
+    for (let i = this.canvas.blocks.length - 1; i >= 0; i--) {
+      if (this.canvas.blocks[i].destroyed) {
+        this.gameEnvironment.removeObject(this.canvas.blocks[i].config);
+      }
     }
+  }
 
-    onTick = (e: PIXI.Ticker) => {
-        if (!this.running) {
-            this.player.updateView();
-            return;
-        }
-        this.timer.update(e.deltaMS);
-        this.playerMovement.playerTick(this.player);
-
-        this.player.updateView();
-        this.camera.update(this.player);
-
-        for (let i = this.canvas.blocks.length - 1; i >= 0; i--) {
-            if (this.canvas.blocks[i].destroyed) {
-                this.gameEnvironment.removeObject(this.canvas.blocks[i].config);
-            }
-        }
-    }
+  logPlayer(player: PlayerSprite, i: number) {
+    console.log(i, player.isGhost, player.keys.up, player.keys.down, player.keys.left, player.keys.right);
+  }
 }

@@ -106,7 +106,6 @@ export const Facade = new class {
         img.onload = () => {
           createImageBitmap(img).then(bitmap => {
             let level = LevelLoader.makeLevelData(bitmap);
-            Facade.gamePage.control.currentLevelIndex = -1;
             Facade.gamePage.control.loadLevelFromData(level);
             Facade.setPage(Facade.gamePage);
           });

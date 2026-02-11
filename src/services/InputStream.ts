@@ -2,52 +2,52 @@ import { PlayerKeys, PlayerSprite } from "../engine/Objects/PlayerSprite";
 import _, { forEach } from 'lodash';
 
 export class InputStream {
-  currentStep = 0;
-  state: 'recording' | 'playback' = 'recording';
+  recordingStep = 0;
+  replayingStep = 0;
   changeRecord: ChangeRecord[] = [];
   previousState: Record<PlayerKeys, boolean>;
 
   replayIndex = 0;
 
-  constructor(public mapId: number) {
+  keys: PlayerKeys[] = ['down','up','left','right','jetpack','dash'];
 
+  constructor(public mapId: number) {
+  }
+
+  resetPlayback() {
+    this.replayIndex = 0;
+    this.recordingStep = 0;
+    this.replayingStep = 0;
   }
 
   recordStep(player: PlayerSprite) {
-    if (this.state !== 'recording') return;
+    this.recordingStep++;
 
-    this.currentStep++;
+    let nextState = _.clone(player.keys);
 
     if (!this.previousState) {
-      for (let key in player.keys) {
-        this.changeRecord.push({time: this.currentStep, key: key as PlayerKeys, state:player.keys[key]});
+      for (let key of this.keys) {
+        this.changeRecord.push({time: this.recordingStep, key: key as PlayerKeys, state:nextState[key]});
       }
-      this.previousState = _.clone(player.keys);
+      this.previousState = nextState;
     } else {
-      for (let key in player.keys) {
+      for (let key of this.keys) {
         let changeMade = false;
-        if (player.keys[key] !== this.previousState[key]) {
-          this.changeRecord.push({time: this.currentStep, key: key as PlayerKeys, state: player.keys[key]});
+        if (nextState[key] !== this.previousState[key]) {
+          this.changeRecord.push({time: this.recordingStep, key: key as PlayerKeys, state: nextState[key]});
           changeMade = true;
         }
         if (changeMade) {
-          this.previousState = _.clone(player.keys);
+          this.previousState = nextState;
         }
       }
     }
   }
 
-  resetPlayback() {
-    this.replayIndex = 0;
-    this.currentStep = 0;
-  }
-
   playStep(player: PlayerSprite) {
-    if (this.state !== 'playback') return;
+    this.replayingStep++;
 
-    this.currentStep++;
-
-    while (this.changeRecord[this.replayIndex].time === this.currentStep) {
+    while (this.replayIndex < this.changeRecord.length && this.changeRecord[this.replayIndex].time === this.replayingStep) {
       player.keys[this.changeRecord[this.replayIndex].key] = this.changeRecord[this.replayIndex].state;
       this.replayIndex++;
     }

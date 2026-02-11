@@ -41,15 +41,13 @@ export class PlayerMovement {
   private maxDoubleJumps = 1;
   private maxWallGrabs = Infinity;
 
-  private player: PlayerSprite;
   constructor(private world: GameEnvironment) {
 
   }
 
   public setPlayer(player: PlayerSprite) {
-    this.player = player;
-    this.player.maxRollTime = this.rollTime;
-    this.player.maxGrabTime = this.grabTime;
+    player.maxRollTime = this.rollTime;
+    player.maxGrabTime = this.grabTime;
   }
 
   public respawn(player: PlayerSprite) {
@@ -87,7 +85,7 @@ export class PlayerMovement {
       player.rollTime--;
     }
 
-    switch(this.player.movementState) {
+    switch(player.movementState) {
       case 'idle': case 'crouching': this.tickIdle(player); break;
       case 'walking': case 'crawling': this.tickWalk(player); break;
       case 'ascending': case 'falling': case 'diving': this.tickAirborn(player); break;
@@ -98,8 +96,8 @@ export class PlayerMovement {
       case 'victory': break;
     }
 
-    if (this.player.keys.holdUp) {
-      if (!this.player.keys.up) this.player.keys.holdUp = false;
+    if (player.holdUp) {
+      if (!player.keys.up) player.holdUp = false;
     }
 
     GameEvents.ACTIVITY_LOG.publish({slug: 'VELOCITY', text: `${player.vX.toFixed(2)}, ${player.vY.toFixed(2)}`});
@@ -107,7 +105,7 @@ export class PlayerMovement {
 
   // if player is IDLE or CROUCHING
   public tickIdle(player: PlayerSprite) {
-    let objectDistance = this.world.checkWorld(player.getCollider());
+    let objectDistance = this.world.checkWorld(player.getCollider(), !player.isGhost);
 
     // 1. determine player actions
     if (player.keys.up && player.movementState === 'idle' && player.landTime <= 0) {
@@ -119,7 +117,7 @@ export class PlayerMovement {
 
     if (player.keys.down && player.movementState !== 'crouching') {
       player.setMovementState('crouching');
-    } else if (!player.keys.down && player.movementState === 'crouching' && this.world.checkVertical(player.getCollider('idle')).up >= 0) {
+    } else if (!player.keys.down && player.movementState === 'crouching' && this.world.checkVertical(player.getCollider('idle'), !player.isGhost).up >= 0) {
       player.setMovementState('idle');
     }
 
@@ -134,7 +132,7 @@ export class PlayerMovement {
     player.vY = 0;
     player.y = player.y;
 
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
 
     if (vCollision.up < 0 && player.movementState === 'idle') player.setMovementState('crouching');
     if (this.checkIfFall(player, vCollision)) return;
@@ -144,7 +142,7 @@ export class PlayerMovement {
     player.vX = 0;
     player.x = player.x;
 
-    let hCollision = this.world.checkHorizontal(player.getCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
 
 
     if (hCollision.left < 0) player.x -= hCollision.left;
@@ -168,7 +166,7 @@ export class PlayerMovement {
       } else {
         player.setMovementState('crawling');
       }
-    } else if (!player.keys.down && player.movementState === 'crawling' &&  this.world.checkVertical(player.getCollider('walking')).up >= 0) {
+    } else if (!player.keys.down && player.movementState === 'crawling' &&  this.world.checkVertical(player.getCollider('walking'), !player.isGhost).up >= 0) {
       player.setMovementState('walking');
     }
 
@@ -184,7 +182,7 @@ export class PlayerMovement {
     // VERTICAL
     player.vY = 0;
 
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
     if (this.checkIfFall(player, vCollision)) return;
 
 
@@ -201,14 +199,18 @@ export class PlayerMovement {
     player.x += player.vX;
 
     // HORIZONTAL COLLISIONS
-    let hCollision = this.world.checkHorizontal(player.getCollider());
-    let hTopCollision = this.world.checkHorizontal(player.getTopCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
+    let hTopCollision = this.world.checkHorizontal(player.getTopCollider(), !player.isGhost);
     
     if (hCollision.left < 0) {
       player.x -= hCollision.left;
 
       if (hCollision.leftBlock && (hCollision.leftBlock.type === 'spring' || hCollision.leftBlock.type === 'exploding')) {
-          if (hCollision.leftBlock.type === 'exploding') this.world.getObject(hCollision.leftBlock).explode();
+          if (hCollision.leftBlock.type === 'exploding') {
+            this.world.getObject(hCollision.leftBlock).explode();
+            if (!player.isGhost) hCollision.leftBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.leftBlock.usedbyGhost = true;
+          }
           player.vX = -this.springSpeed;
           player.bounceTime = this.bounceTime;
       } else {
@@ -233,7 +235,11 @@ export class PlayerMovement {
       player.x += hCollision.right;
 
       if (hCollision.rightBlock && (hCollision.rightBlock.type === 'spring' || hCollision.rightBlock.type === 'exploding')) {
-        if (hCollision.rightBlock.type === 'exploding') this.world.getObject(hCollision.rightBlock).explode();
+        if (hCollision.rightBlock.type === 'exploding') {
+          this.world.getObject(hCollision.rightBlock).explode();
+          if (!player.isGhost) hCollision.rightBlock.usedByPlayer = true;
+          if (player.isGhost) hCollision.rightBlock.usedbyGhost = true;
+        }
         player.vX = this.springSpeed;
         player.bounceTime = this.bounceTime;
       } else {
@@ -259,13 +265,13 @@ export class PlayerMovement {
   public tickAirborn(player: PlayerSprite) {
     // 1. determine player actions
     if (player.keys.up) {
-      if (!player.keys.holdUp) {
+      if (!player.holdUp) {
         if (player.doubleJumpsRemaining > 0) {
           player.doubleJumpsRemaining -= 1;
           if (this.startJump(player, true)) return;
         } else {
           if (player.movementState === 'ascending') {
-            player.keys.holdUp = true;
+            player.holdUp = true;
           }
         }
       }
@@ -292,7 +298,7 @@ export class PlayerMovement {
     player.y += player.vY;
     
     // 3. Collision
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
 
     if (vCollision.down <= 0 && (player.movementState === 'falling' || player.movementState === 'diving')) {
       if (vCollision.downBlock) {
@@ -320,7 +326,11 @@ export class PlayerMovement {
         player.y -= vCollision.up;
         player.setMovementState('falling');
         if (vCollision.upBlock && (vCollision.upBlock.type === 'spring' || vCollision.upBlock.type === 'exploding')) {
-          if (vCollision.upBlock.type === 'exploding') this.world.getObject(vCollision.upBlock).explode();
+          if (vCollision.upBlock.type === 'exploding') {
+            this.world.getObject(vCollision.upBlock).explode();
+            if (!player.isGhost) vCollision.upBlock.usedByPlayer = true;
+            if (player.isGhost) vCollision.upBlock.usedbyGhost = true;
+          }
           player.vY = -this.springSpeed;
           return;
         } else {
@@ -337,13 +347,17 @@ export class PlayerMovement {
     player.x += player.vX;
 
     // 3. Collision
-    let hCollision = this.world.checkHorizontal(player.getCollider());
-    let hTopCollision = this.world.checkHorizontal(player.getTopCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
+    let hTopCollision = this.world.checkHorizontal(player.getTopCollider(), !player.isGhost);
 
     if (hCollision.left < 0) {
       player.x -= hCollision.left;
       if (hCollision.leftBlock && (hCollision.leftBlock.type === 'spring' || hCollision.leftBlock.type === 'exploding')) {
-        if (hCollision.leftBlock.type === 'exploding') this.world.getObject(hCollision.leftBlock).explode();
+        if (hCollision.leftBlock.type === 'exploding') {
+            this.world.getObject(hCollision.leftBlock).explode();
+            if (!player.isGhost) hCollision.leftBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.leftBlock.usedbyGhost = true;
+          }
         player.vX = -this.springSpeed;
         return;
       }
@@ -366,7 +380,11 @@ export class PlayerMovement {
     if (hCollision.right < 0) {
       player.x += hCollision.right;
       if (hCollision.rightBlock && (hCollision.rightBlock.type === 'spring' || hCollision.rightBlock.type === 'exploding')) {
-        if (hCollision.rightBlock.type === 'exploding') this.world.getObject(hCollision.rightBlock).explode();
+        if (hCollision.rightBlock.type === 'exploding') {
+            this.world.getObject(hCollision.rightBlock).explode();
+            if (!player.isGhost) hCollision.rightBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.rightBlock.usedbyGhost = true;
+          }
         player.vX = this.springSpeed;
         return;
       }
@@ -411,9 +429,9 @@ export class PlayerMovement {
     }
 
     // VERTICAL
-    this.player.y += this.grabSlideSpeed;
+    player.y += this.grabSlideSpeed;
 
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
 
     if (vCollision.down < 0) {
       player.y += vCollision.down;
@@ -422,7 +440,7 @@ export class PlayerMovement {
     }
 
     //HORIZONTAL
-    let hCollision = this.world.checkHorizontal(player.getCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
     if (hCollision.left > 0 && hCollision.right > 0) {
       player.setMovementState('falling');
       return;
@@ -437,7 +455,7 @@ export class PlayerMovement {
 
     // VERTICAL
     player.y-= this.climbSpeed;
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
 
     if (vCollision.up < 0) {
       player.y += vCollision.up;
@@ -446,12 +464,12 @@ export class PlayerMovement {
     }
 
     // HORIZONTAL
-    let hCollision = this.world.checkHorizontal(player.getCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
 
     if (player.movementState === 'climbing-left' && hCollision.left > 0) {
       player.setMovementState('crouching');
       player.x -= this.climbInset;
-      vCollision = this.world.checkVertical(player.getCollider());
+      vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
       if (vCollision.down < 0) {
         player.y += vCollision.down;
       }
@@ -464,7 +482,7 @@ export class PlayerMovement {
     if (player.movementState === 'climbing-right' && hCollision.right > 0) {
       player.setMovementState('crouching');
       player.x += this.climbInset;
-      vCollision = this.world.checkVertical(player.getCollider());
+      vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
       if (vCollision.down < 0) {
         player.y += vCollision.down;
       }
@@ -488,19 +506,23 @@ export class PlayerMovement {
     }
 
     // VERTICAL
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
     if (this.checkIfFall(player, vCollision)) return;
 
     // HORIZONTAL
     player.x += player.vX;
 
-    let hCollision = this.world.checkHorizontal(player.getCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
 
     if (hCollision.left < 0) {
       player.x -= hCollision.left;
       if (player.vX < 0) {
         if (hCollision.leftBlock && (hCollision.leftBlock.type === 'spring' || hCollision.leftBlock.type === 'exploding')) {
-          if (hCollision.leftBlock.type === 'exploding') this.world.getObject(hCollision.leftBlock).explode();
+          if (hCollision.leftBlock.type === 'exploding') {
+            this.world.getObject(hCollision.leftBlock).explode();
+            if (!player.isGhost) hCollision.leftBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.leftBlock.usedbyGhost = true;
+          }
           player.vX = -this.springSpeed;
         } else {
           player.vX = this.bounce * player.vX;
@@ -513,7 +535,11 @@ export class PlayerMovement {
       player.x += hCollision.right;
       if (player.vX > 0) {
         if (hCollision.rightBlock && (hCollision.rightBlock.type === 'spring' || hCollision.rightBlock.type === 'exploding')) {
-          if (hCollision.rightBlock.type === 'exploding') this.world.getObject(hCollision.rightBlock).explode();
+          if (hCollision.rightBlock.type === 'exploding') {
+            this.world.getObject(hCollision.rightBlock).explode();
+            if (!player.isGhost) hCollision.rightBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.rightBlock.usedbyGhost = true;
+          }
           player.vX = this.springSpeed;
         } else {
           player.vX = this.bounce * player.vX;
@@ -551,7 +577,7 @@ export class PlayerMovement {
     player.vY = Math.max(player.vY, this.jetpackMaxSpeed);
     player.y += player.vY;
 
-    let vCollision = this.world.checkVertical(player.getCollider());
+    let vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
 
     if (vCollision.down <= 0 && player.vY >= 0) {
       player.y += vCollision.down - player.vY;
@@ -561,7 +587,11 @@ export class PlayerMovement {
 
     if (vCollision.up < 0 && player.vY <= 0) {
       if (vCollision.upBlock && (vCollision.upBlock.type === 'spring' || vCollision.upBlock.type === 'exploding')) {
-        if (vCollision.upBlock.type === 'exploding') this.world.getObject(vCollision.upBlock).explode();
+        if (vCollision.upBlock.type === 'exploding') {
+            this.world.getObject(vCollision.upBlock).explode();
+            if (!player.isGhost) vCollision.upBlock.usedByPlayer = true;
+            if (player.isGhost) vCollision.upBlock.usedbyGhost = true;
+          }
         player.y -= vCollision.up + player.vY;
         player.vY = -this.springSpeed;
       } else {
@@ -576,11 +606,15 @@ export class PlayerMovement {
     player.vX *= this.airFriction;
     player.x += player.vX;
 
-    let hCollision = this.world.checkHorizontal(player.getCollider());
+    let hCollision = this.world.checkHorizontal(player.getCollider(), !player.isGhost);
 
     if (hCollision.left < 0 && player.vX <= 0) {
       if (hCollision.leftBlock && (hCollision.leftBlock.type === 'spring' || hCollision.leftBlock.type === 'exploding')) {
-        if (hCollision.leftBlock.type === 'exploding') this.world.getObject(hCollision.leftBlock).explode();
+        if (hCollision.leftBlock.type === 'exploding') {
+            this.world.getObject(hCollision.leftBlock).explode();
+            if (!player.isGhost) hCollision.leftBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.leftBlock.usedbyGhost = true;
+          }
         player.vX = -this.springSpeed;
       } else {
         player.x -= hCollision.left;
@@ -591,7 +625,11 @@ export class PlayerMovement {
 
     if (hCollision.right < 0 && player.vX >= 0) {
       if (hCollision.rightBlock && (hCollision.rightBlock.type === 'spring' || hCollision.rightBlock.type === 'exploding')) {
-      if (hCollision.rightBlock.type === 'exploding') this.world.getObject(hCollision.rightBlock).explode();
+      if (hCollision.rightBlock.type === 'exploding') {
+            this.world.getObject(hCollision.rightBlock).explode();
+            if (!player.isGhost) hCollision.rightBlock.usedByPlayer = true;
+            if (player.isGhost) hCollision.rightBlock.usedbyGhost = true;
+          }
         player.vX = this.springSpeed;
       } else {  
         player.x += hCollision.right;
@@ -605,7 +643,7 @@ export class PlayerMovement {
     if (vCollision.down > 0) {
       if (player.movementState === 'crouching' || player.movementState === 'crawling' || player.movementState === 'rolling') {
         player.setMovementState('falling');
-        vCollision = this.world.checkVertical(player.getCollider());
+        vCollision = this.world.checkVertical(player.getCollider(), !player.isGhost);
         if (vCollision.up < 0) player.y -= vCollision.up;
       } else {
         player.setMovementState('falling');
@@ -618,14 +656,18 @@ export class PlayerMovement {
             GameEvents.SWITCH_ACTIVATED.publish(vCollision.downBlock);
           });
         } else if (vCollision.downBlock && (vCollision.downBlock.type === 'spring' || vCollision.downBlock.type === 'exploding')) {
-          if (vCollision.downBlock.type === 'exploding') this.world.getObject(vCollision.downBlock).explode();
+          if (vCollision.downBlock.type === 'exploding') {
+            this.world.getObject(vCollision.downBlock).explode();
+            if (!player.isGhost) vCollision.downBlock.usedByPlayer = true;
+            if (player.isGhost) vCollision.downBlock.usedbyGhost = true;
+          }
           player.vY = this.springSpeed;
           player.bounceTime = this.bounceTime;
           player.setMovementState('ascending');
           return true;
         } else if (vCollision.downBlock.type === 'goal') {
           player.setMovementState('victory');
-          GameEvents.LEVEL_COMPLETE.publish();
+          if (!player.isGhost) GameEvents.LEVEL_COMPLETE.publish();
           return true;
         }
       }
@@ -635,11 +677,11 @@ export class PlayerMovement {
   }
 
   public startJump(player: PlayerSprite, doublejump?: boolean) {
-    if (player.keys.holdUp) return false;
+    if (player.holdUp) return false;
 
     player.setMovementState('ascending');
     player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
-    player.keys.holdUp = true;
+    player.holdUp = true;
 
     return true;
   }

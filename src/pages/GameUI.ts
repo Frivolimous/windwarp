@@ -27,7 +27,6 @@ export class GameUI extends BaseUI {
   public navIn = () => {
     this.keyboard.disabled = false;
     this.ticker.add(this.control.onTick);
-    this.control.loadLevel(this.control.currentLevelIndex);
   }
   
   public navOut = () => {

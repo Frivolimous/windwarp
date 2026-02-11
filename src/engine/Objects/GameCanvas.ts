@@ -115,4 +115,10 @@ export class GameCanvas extends PIXI.Container {
   addPlayer(player: PIXI.Container) {
     this.layers[GameCanvas.PLAYER].addChild(player);
   }
+
+  removePlayer(player: PIXI.Container) {
+    try {
+      this.layers[GameCanvas.PLAYER].removeChild(player);
+    } catch (e) {}
+  }
 }

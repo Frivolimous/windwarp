@@ -21,6 +21,9 @@ export class LevelLoader {
   static tileTextures: PIXI.Texture[] = [];
   public static levelData: ILevelData[] = [];
 
+  static characterTexture: PIXI.TextureSource;
+  static skins: PIXI.Texture[][] = [];
+
   public static async setupTilemap() {
     // let src = 'assets/TilemapBigger.png';
     let src = 'assets/TilemapBETTER.png';
@@ -28,12 +31,15 @@ export class LevelLoader {
     // let src = 'assets/TilemapGIRL.png';
     // let src = 'assets/TilemapBOY.png';
 
+    let charSrc = 'assets/CharactersEXPANDED.png';
+
     const tilesetTexture: PIXI.TextureSource = await PIXI.Assets.load({
       src,
       data: {
         mipmap: false,
       }
     });
+
     const TILE_SIZE = 20;
     const TILES_PER_ROW = tilesetTexture.width / TILE_SIZE;
 
@@ -47,6 +53,34 @@ export class LevelLoader {
         source: tilesetTexture,
         frame: new PIXI.Rectangle(x, y, TILE_SIZE, TILE_SIZE),
       });
+    }
+
+    this.characterTexture = await PIXI.Assets.load({
+      src: charSrc,
+      data: {
+        mipmap: false,
+      }
+    });
+
+    const CHAR_TILES_PER_ROW = 6;
+
+    for (let y = 0; y < 6; y++) {
+      let skin: PIXI.Texture[] = [];
+      this.skins.push(skin);
+      for (let x = 0; x < 3; x++) {
+        skin.push(new PIXI.Texture({
+          source: this.characterTexture,
+          frame: new PIXI.Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+        }));
+      }
+      skin = [];
+      this.skins.push(skin);
+      for (let x = 3; x < 6; x++) {
+        skin.push(new PIXI.Texture({
+          source: this.characterTexture,
+          frame: new PIXI.Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+        }));
+      }
     }
   }
 

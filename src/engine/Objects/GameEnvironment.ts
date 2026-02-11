@@ -23,7 +23,7 @@ export class GameEnvironment {
     this.objects = data.blocks;
   }
 
-  public checkWorld(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+  public checkWorld(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
     let response: WorldResponse = {
       up: Infinity,
       down: Infinity,
@@ -40,6 +40,8 @@ export class GameEnvironment {
 
     this.objects.forEach(obj => {
       if (obj.type === 'ghost') return;
+      if (isPlayer && obj.usedByPlayer) return;
+      if (!isPlayer && obj.usedbyGhost) return;
       
       let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
       let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
@@ -101,7 +103,7 @@ export class GameEnvironment {
     return response;
   }
   
-  public checkVertical(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+  public checkVertical(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
     let response: WorldResponse = {
       up: Infinity,
       down: Infinity,
@@ -117,6 +119,9 @@ export class GameEnvironment {
 
     this.objects.forEach(obj => {
       if (obj.type === 'ghost') return;
+      if (isPlayer && obj.usedByPlayer) return;
+      if (!isPlayer && obj.usedbyGhost) return;
+
       let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
       let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
 
@@ -140,7 +145,7 @@ export class GameEnvironment {
     return response;
   }
 
-  public checkHorizontal(rect: {x: number, y: number, width: number, height: number}): WorldResponse {
+  public checkHorizontal(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
     let response: WorldResponse = {
       up: Infinity,
       down: Infinity,
@@ -158,6 +163,9 @@ export class GameEnvironment {
 
     this.objects.forEach(obj => {
       if (obj.type === 'ghost') return;
+      if (isPlayer && obj.usedByPlayer) return;
+      if (!isPlayer && obj.usedbyGhost) return;
+
       let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
       let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
 
