@@ -37,7 +37,7 @@ export class PlayerSprite extends PIXI.Container {
   public maxGrabTime = 10;
   public landTime = 0;
 
-  private skewMult = -0.06;
+  private skewMult = -1.2 / LevelLoader.CHAR_SIZE;
   private vStretchMult = 0.1;
   private maxVStretch = 0.2;
   private animationSpeed = 0.2;
@@ -58,8 +58,8 @@ export class PlayerSprite extends PIXI.Container {
 
   constructor() {
     super();
-    let width = 8;
-    let height = 30;
+    let width = Math.round(0.4*LevelLoader.CHAR_SIZE);
+    let height = Math.round(1.5*LevelLoader.CHAR_SIZE);
     
     this.collider.set(-width / 2, -height, width, height);
 
@@ -234,7 +234,7 @@ export class PlayerSprite extends PIXI.Container {
     let skew = this.body.skew.x;
     let dSkew = desiredSkew - skew;
     this.body.skew.x = skew + dSkew * this.animationSpeed;
-    this.body.x = this.body.skew.x * (20 - (1 - this.body.scale.y) * 15);
+    this.body.x = this.body.skew.x * (this.collider.height * 0.65 - (1 - this.body.scale.y) * 15);
 
     let stretch = this.body.scale.y;
     let dStretch = desiredVStretch - stretch;
@@ -346,8 +346,8 @@ export class PlayerSprite extends PIXI.Container {
       case 'ascending': case 'falling':
         this.handAnimationSpeed = 0.05;
         dly = dry = this.collider.height * (-1 - _.clamp(this.vY, -5, 5) * 0.1);
-        dlx = this.collider.width * (-0.6 + this.vX * 0.2);
-        drx = this.collider.width * (0.6 + this.vX * 0.2);
+        dlx = this.collider.width * (-0.6 + this.vX * 0.12);
+        drx = this.collider.width * (0.6 + this.vX / this.collider.width * 1.56);
         break;
       case 'crouching':
         this.handAnimationSpeed = 0.2;

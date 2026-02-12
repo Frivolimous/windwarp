@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { GameBlock, IGameBlock } from "./GameBlock";
 import { colorLuminance } from "../../JMGE/others/Colors";
-import { ILevelData } from "../../services/LevelLoader";
+import { ILevelData, LevelLoader } from "../../services/LevelLoader";
 
 export class GameCanvas extends PIXI.Container {
   public static BACKGROUND = 0;
@@ -24,7 +24,7 @@ export class GameCanvas extends PIXI.Container {
     new PIXI.Container(),
   ];
 
-  constructor(public boundWidth: number, public boundHeight: number, scale: number = 0.5) {
+  constructor(public boundWidth: number, public boundHeight: number, public baseScale: number = 1) {
     super();
     this.addChild(this.background, this.movingLayer, this.staticLayer);
     this.movingLayer.addChild(this.layers[GameCanvas.OBJECTS], this.layers[GameCanvas.PLAYER], this.layers[GameCanvas.EFFECTS]);
@@ -78,22 +78,24 @@ export class GameCanvas extends PIXI.Container {
         this.layers[GameCanvas.OBJECTS].addChild(block);
       }
     });
-    
-    for (let x = 0; x < this.boundWidth; x += 20) {
-      for (let y = 0; y < this.boundHeight; y += 20) {
-        let b1 = this.findBlockAt(objects, x, y);
-        let bR = this.findBlockAt(objects, x + 20, y);
-        let bD = this.findBlockAt(objects, x, y + 20);
 
-        if (((b1 === undefined) !== (bR === undefined)) || (b1 !== undefined && (b1.type != bR.type))) {
-          if (b1 === undefined || bR === undefined || ((b1.type !== 'normal' || bR.type !== 'ghost') && (b1.type !== 'ghost' || bR.type !== 'normal'))) {
-            this.foreground.moveTo(x + 20, y).lineTo(x + 20, y + 20).stroke({width: 2, color: 0});
+    if (LevelLoader.DRAW_OUTLINES) {
+      for (let x = 0; x < this.boundWidth; x += LevelLoader.TILE_SIZE) {
+        for (let y = 0; y < this.boundHeight; y += LevelLoader.TILE_SIZE) {
+          let b1 = this.findBlockAt(objects, x, y);
+          let bR = this.findBlockAt(objects, x + LevelLoader.TILE_SIZE, y);
+          let bD = this.findBlockAt(objects, x, y + LevelLoader.TILE_SIZE);
+  
+          if (((b1 === undefined) !== (bR === undefined)) || (b1 !== undefined && (b1.type != bR.type))) {
+            if (b1 === undefined || bR === undefined || ((b1.type !== 'normal' || bR.type !== 'ghost') && (b1.type !== 'ghost' || bR.type !== 'normal'))) {
+              this.foreground.moveTo(x + LevelLoader.TILE_SIZE, y).lineTo(x + LevelLoader.TILE_SIZE, y + LevelLoader.TILE_SIZE).stroke({width: 2, color: 0});
+            }
           }
-        }
-
-        if (((b1 === undefined) !== (bD === undefined)) || (b1 !== undefined && b1.type != bD.type)) {
-          if (b1 === undefined || bD === undefined || ((b1.type !== 'normal' || bD.type !== 'ghost') && (b1.type !== 'ghost' || bD.type !== 'normal'))) {
-            this.foreground.moveTo(x, y + 20).lineTo(x + 20, y + 20).stroke({width: 2, color: 0});
+  
+          if (((b1 === undefined) !== (bD === undefined)) || (b1 !== undefined && b1.type != bD.type)) {
+            if (b1 === undefined || bD === undefined || ((b1.type !== 'normal' || bD.type !== 'ghost') && (b1.type !== 'ghost' || bD.type !== 'normal'))) {
+              this.foreground.moveTo(x, y + LevelLoader.TILE_SIZE).lineTo(x + LevelLoader.TILE_SIZE, y + LevelLoader.TILE_SIZE).stroke({width: 2, color: 0});
+            }
           }
         }
       }

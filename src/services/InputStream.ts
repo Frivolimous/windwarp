@@ -18,31 +18,36 @@ export class InputStream {
     this.replayIndex = 0;
     this.recordingStep = 0;
     this.replayingStep = 0;
+    this.previousState = null;
   }
 
-  recordStep(player: PlayerSprite) {
-    this.recordingStep++;
+recordStep(player: PlayerSprite) {
+  this.recordingStep++;
 
-    let nextState = { ...player.keys };
+  if (!this.previousState) {
+    this.previousState = { ...player.keys };
 
-    if (!this.previousState) {
-      for (let key of this.keys) {
-        this.changeRecord.push({time: this.recordingStep, key: key as PlayerKeys, state:nextState[key]});
-      }
-      this.previousState = nextState;
-    } else {
-      let changeMade = false;
-      for (let key of this.keys) {
-        if (nextState[key] !== this.previousState[key]) {
-          this.changeRecord.push({time: this.recordingStep, key: key as PlayerKeys, state: nextState[key]});
-          changeMade = true;
-        }
-      }
-      if (changeMade) {
-        this.previousState = nextState;
+    for (let key of this.keys) {
+      this.changeRecord.push({time: this.recordingStep, key, state: this.previousState[key]});
+    }
+  } else {
+    for (let key of this.keys) {
+      const current = player.keys[key];
+      const previous = this.previousState[key];
+  
+      if (current !== previous) {
+        this.changeRecord.push({
+          time: this.recordingStep,
+          key,
+          state: current
+        });
+  
+        this.previousState[key] = current;
       }
     }
   }
+
+}
 
   playStep(player: PlayerSprite) {
     this.replayingStep++;

@@ -16,6 +16,10 @@ export class LevelLoader {
     'assets/Level10.bmp',
   ];
 
+  static TILE_SIZE = 24;
+  static CHAR_SIZE = 24;
+  static DRAW_OUTLINES = true;
+
   static levelBitmaps: ImageBitmap[] = [];
   static mainTexture: PIXI.TextureSource;
   static tileTextures: PIXI.Texture[] = [];
@@ -25,13 +29,9 @@ export class LevelLoader {
   static skins: PIXI.Texture[][] = [];
 
   public static async setupTilemap() {
-    // let src = 'assets/TilemapBigger.png';
-    let src = 'assets/TilemapBETTER.png';
-    // let src = 'assets/TilemapBASIC.png';
-    // let src = 'assets/TilemapGIRL.png';
-    // let src = 'assets/TilemapBOY.png';
+    let src = 'assets/Tilemap24.png';
 
-    let charSrc = 'assets/CharactersEXPANDED.png';
+    let charSrc = 'assets/Characters24.png';
 
     const tilesetTexture: PIXI.TextureSource = await PIXI.Assets.load({
       src,
@@ -40,18 +40,17 @@ export class LevelLoader {
       }
     });
 
-    const TILE_SIZE = 20;
-    const TILES_PER_ROW = tilesetTexture.width / TILE_SIZE;
+    const TILES_PER_ROW = tilesetTexture.width / this.TILE_SIZE;
 
     this.mainTexture = tilesetTexture;
 
     for (let i = 0; i < 20; i++) {
-      const x = (i % TILES_PER_ROW) * TILE_SIZE;
-      const y = Math.floor(i / TILES_PER_ROW) * TILE_SIZE;
+      const x = (i % TILES_PER_ROW) * this.TILE_SIZE;
+      const y = Math.floor(i / TILES_PER_ROW) * this.TILE_SIZE;
 
       this.tileTextures[i] = new PIXI.Texture({
         source: tilesetTexture,
-        frame: new PIXI.Rectangle(x, y, TILE_SIZE, TILE_SIZE),
+        frame: new PIXI.Rectangle(x, y, this.TILE_SIZE, this.TILE_SIZE),
       });
     }
 
@@ -70,7 +69,7 @@ export class LevelLoader {
       for (let x = 0; x < 3; x++) {
         skin.push(new PIXI.Texture({
           source: this.characterTexture,
-          frame: new PIXI.Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+          frame: new PIXI.Rectangle(x * this.CHAR_SIZE, y * this.CHAR_SIZE, this.CHAR_SIZE, this.CHAR_SIZE),
         }));
       }
       skin = [];
@@ -78,7 +77,7 @@ export class LevelLoader {
       for (let x = 3; x < 6; x++) {
         skin.push(new PIXI.Texture({
           source: this.characterTexture,
-          frame: new PIXI.Rectangle(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+          frame: new PIXI.Rectangle(x * this.CHAR_SIZE, y * this.CHAR_SIZE, this.CHAR_SIZE, this.CHAR_SIZE),
         }));
       }
     }
@@ -104,7 +103,7 @@ export class LevelLoader {
     });
   }
 
-  public static makeLevelData(bitmap: ImageBitmap, pixelsPerBlock = 20): ILevelData {
+  public static makeLevelData(bitmap: ImageBitmap): ILevelData {
     let canvas = document.createElement('canvas');
     canvas.width = bitmap.width;
     canvas.height = bitmap.height;
@@ -113,8 +112,8 @@ export class LevelLoader {
     let data = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
     let m: ILevelData = {
       blocks: [],
-      width: bitmap.width * pixelsPerBlock,
-      height: bitmap.height * pixelsPerBlock,
+      width: bitmap.width * LevelLoader.TILE_SIZE,
+      height: bitmap.height * LevelLoader.TILE_SIZE,
       img: new Tilemap(this.tileTextures.map(el => el.source)),
     };
 
@@ -125,16 +124,16 @@ export class LevelLoader {
         let index = (y * bitmap.width + x) * 4;
         let type = ColorMapping[`${data[index]},${data[index + 1]},${data[index + 2]}`];
         if (type === 'player') {
-          m.startingPosition = {x: x * pixelsPerBlock, y: y * pixelsPerBlock};
+          m.startingPosition = {x: x * LevelLoader.TILE_SIZE, y: y * LevelLoader.TILE_SIZE};
         } else if (type) {
           m.blocks.push({
-            x: x * pixelsPerBlock,
-            y: y * pixelsPerBlock,
-            width: pixelsPerBlock,
-            height: pixelsPerBlock,
+            x: x * LevelLoader.TILE_SIZE,
+            y: y * LevelLoader.TILE_SIZE,
+            width: LevelLoader.TILE_SIZE,
+            height: LevelLoader.TILE_SIZE,
             type: type,
           });
-          type !== 'exploding' && m.img.tile(TileMap[type],x * pixelsPerBlock,y * pixelsPerBlock, TileMapOptions[type]);
+          type !== 'exploding' && m.img.tile(TileMap[type],x * LevelLoader.TILE_SIZE,y * LevelLoader.TILE_SIZE, TileMapOptions[type]);
         }
       }
     }
@@ -190,15 +189,15 @@ enum TileMap {
 }
 
 const TileMapOptions: Record<GameBlockType, any> = {
-  'normal': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
-  'spring': {u:20, v: 0, tileWidth: 20, tileHeight: 20},
-  'exploding': {u:20*2, v: 0, tileWidth: 20, tileHeight: 20},
-  'checkpoint': {u:20*3, v: 0, tileWidth: 20, tileHeight: 20},
-  'goal': {u:20*4, v: 0, tileWidth: 20, tileHeight: 20},
-  'ghost': {u:0, v: 20, tileWidth: 20, tileHeight: 20},
-  'player': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
-  'switch': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
-  'door': {u:0, v: 0, tileWidth: 20, tileHeight: 20},
+  'normal': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'spring': {u:LevelLoader.TILE_SIZE, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'exploding': {u:LevelLoader.TILE_SIZE*2, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'checkpoint': {u:LevelLoader.TILE_SIZE*3, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'goal': {u:LevelLoader.TILE_SIZE*4, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'ghost': {u:0, v: LevelLoader.TILE_SIZE, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'player': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'switch': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'door': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
 }
 
 export interface ILevelData {

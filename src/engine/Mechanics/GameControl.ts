@@ -137,6 +137,7 @@ export class GameControl {
   addGhostPlayer() {
     if (!this.ghostPlayer) {
         this.ghostPlayer = new PlayerSprite();
+        this.ghostPlayer.nextSkin(0);
         this.ghostPlayer.makeGhost();
         this.playerMovement.setPlayer(this.ghostPlayer);
         this.canvas.layers[GameCanvas.PLAYER].addChildAt(this.ghostPlayer, 0);
@@ -169,6 +170,11 @@ export class GameControl {
       this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
       this.ghostPlayer.reset();
       this.ghostPlayer.setMovementState('idle');
+    } else {
+      if (this.ghostPlayer) {
+        this.canvas.removePlayer(this.ghostPlayer);
+        this.ghostPlayer = null;
+      }
     }
   }
 
@@ -221,14 +227,12 @@ export class GameControl {
 
     if (this.ghostPlayer && this.replayingStream) {
       this.replayingStream.playStep(this.ghostPlayer);
-      this.logPlayer(this.ghostPlayer, this.recordingStream.replayingStep);
       
       this.playerMovement.playerTick(this.ghostPlayer);
       this.ghostPlayer.updateView();
     }
     if (this.recordingStream) {
       this.recordingStream.recordStep(this.player);
-      this.logPlayer(this.player, this.recordingStream.recordingStep);
     }
     this.playerMovement.playerTick(this.player);
     this.player.updateView();
@@ -246,9 +250,5 @@ export class GameControl {
         this.gameEnvironment.removeObject(this.canvas.blocks[i].config);
       }
     }
-  }
-
-  logPlayer(player: PlayerSprite, i: number) {
-    console.log(i, player.isGhost, player.keys.up, player.keys.down, player.keys.left, player.keys.right);
   }
 }

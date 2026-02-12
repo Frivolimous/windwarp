@@ -11,9 +11,12 @@ export class GameBlock extends PIXI.Container {
     constructor(public config: IGameBlock) {
         super();
         this.tiling = new PIXI.TilingSprite(LevelLoader.tileTextures[2], config.width, config.height);
-        this.addChild(this.tiling, this.overlay);
-        this.overlay.rect(0, 0, config.width, config.height);
-        this.overlay.stroke({width: 2, color: 0});
+        this.addChild(this.tiling);
+        if (LevelLoader.DRAW_OUTLINES) {
+            this.addChild(this.overlay);
+            this.overlay.rect(0, 0, config.width, config.height);
+            this.overlay.stroke({width: 2, color: 0});
+        }
         this.position.set(config.x, config.y);
     }
 

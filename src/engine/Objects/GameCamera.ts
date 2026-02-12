@@ -17,10 +17,10 @@ export class GameCamera {
   }
 
   update(player: PlayerSprite, instant = false) {
-    this.canvas.scale.set(1);
+    this.canvas.scale.set(this.canvas.baseScale);
 
-    let dX = player.x - this.viewWidth * this.playerX;
-    let dY = player.y - this.viewHeight * this.playerY;
+    let dX = player.x - this.viewWidth * this.playerX / this.canvas.scale.x;
+    let dY = player.y - this.viewHeight * this.playerY / this.canvas.scale.y;
     if (instant) {
       this.x = dX;
       this.y = dY;
@@ -34,11 +34,11 @@ export class GameCamera {
     if (this.y < 0) {
       this.y = 0;
     }
-    if (this.x > this.canvas.boundWidth - this.viewWidth) {
-      this.x = this.canvas.boundWidth - this.viewWidth;
+    if (this.x > this.canvas.boundWidth - this.viewWidth / this.canvas.scale.x) {
+      this.x = this.canvas.boundWidth - this.viewWidth / this.canvas.scale.x;
     }
-    if (this.y > this.canvas.boundHeight - this.viewHeight) {
-      this.y = this.canvas.boundHeight - this.viewHeight;
+    if (this.y > this.canvas.boundHeight - this.viewHeight / this.canvas.scale.y) {
+      this.y = this.canvas.boundHeight - this.viewHeight / this.canvas.scale.y;
     }
     this.canvas.movingLayer.x = -this.x;
     this.canvas.movingLayer.y = -this.y;
@@ -54,46 +54,29 @@ export class GameCamera {
     let pY = this.viewHeight / fY;
 
     let p = Math.min(pX, pY) * 0.8;
-    let dS = Math.min(1, p);
+    let dS = Math.min(1, p) * this.canvas.baseScale;
 
     this.canvas.scale.set(this.canvas.scale.x + (dS - this.canvas.scale.x) * this.cameraSpeed);
 
     // position the canvas WIDTH
-    let cW = this.canvas.boundWidth * this.canvas.scale.x;
-    
-    if (cW < this.viewWidth) {
-      this.x = -(this.viewWidth - cW) / 2;
-    } else {
-      let aX = (player.x + player2.x) / 2;
-      let dX = aX - this.viewWidth * 0.5 / this.canvas.scale.x;
-
-      this.x = this.x + (dX - this.x) * this.cameraSpeed;
-      if (this.x < 0) {
-        this.x = 0;
-      }
-
-      if (this.x > this.canvas.boundWidth - this.viewWidth) {
-        this.x = this.canvas.boundWidth - this.viewWidth;
-      }
+    let aX = (player.x + player2.x) / 2;
+    let aY = (player.y + player2.y) / 2;
+    let dX = aX - this.viewWidth * this.playerX / this.canvas.scale.x;
+    let dY = aY - this.viewHeight * this.playerY / this.canvas.scale.y;
+    this.x = this.x + (dX - this.x) * this.cameraSpeed;
+    this.y = this.y + (dY - this.y) * this.cameraSpeed;
+    if (this.x < 0) {
+      this.x = 0;
     }
-
-    // position the canvas HEIGHT
-    let cH = this.canvas.boundHeight * this.canvas.scale.y;
-    if (cH < this.viewHeight) {
-      this.y = (cH - this.viewHeight) / 2 / this.canvas.scale.y;
-    } else {
-      let aY = (Math.max(player.y, 0) + Math.max(player2.y, 0)) / 2;
-      let dY = aY - this.viewHeight * 0.5 / this.canvas.scale.y;
-
-      this.y = this.y + (dY - this.y) * this.cameraSpeed;
-      if (this.y < 0) {
-        this.y = 0;
-      }
-      if (this.y > this.canvas.boundHeight - this.viewHeight) {
-        this.y = this.canvas.boundHeight - this.viewHeight;
-      }
+    if (this.y < 0) {
+      this.y = 0;
     }
-
+    if (this.x > this.canvas.boundWidth - this.viewWidth / this.canvas.scale.x) {
+      this.x = this.canvas.boundWidth - this.viewWidth / this.canvas.scale.x;
+    }
+    if (this.y > this.canvas.boundHeight - this.viewHeight / this.canvas.scale.y) {
+      this.y = this.canvas.boundHeight - this.viewHeight / this.canvas.scale.y;
+    }
     this.canvas.movingLayer.x = -this.x;
     this.canvas.movingLayer.y = -this.y;
     this.canvas.parallaxBackground();
