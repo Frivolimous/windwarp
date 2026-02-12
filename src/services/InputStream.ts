@@ -23,7 +23,7 @@ export class InputStream {
   recordStep(player: PlayerSprite) {
     this.recordingStep++;
 
-    let nextState = _.clone(player.keys);
+    let nextState = { ...player.keys };
 
     if (!this.previousState) {
       for (let key of this.keys) {
@@ -31,15 +31,15 @@ export class InputStream {
       }
       this.previousState = nextState;
     } else {
+      let changeMade = false;
       for (let key of this.keys) {
-        let changeMade = false;
         if (nextState[key] !== this.previousState[key]) {
           this.changeRecord.push({time: this.recordingStep, key: key as PlayerKeys, state: nextState[key]});
           changeMade = true;
         }
-        if (changeMade) {
-          this.previousState = nextState;
-        }
+      }
+      if (changeMade) {
+        this.previousState = nextState;
       }
     }
   }
@@ -47,7 +47,7 @@ export class InputStream {
   playStep(player: PlayerSprite) {
     this.replayingStep++;
 
-    while (this.replayIndex < this.changeRecord.length && this.changeRecord[this.replayIndex].time === this.replayingStep) {
+    while (this.replayIndex < this.changeRecord.length && this.changeRecord[this.replayIndex].time <= this.replayingStep) {
       player.keys[this.changeRecord[this.replayIndex].key] = this.changeRecord[this.replayIndex].state;
       this.replayIndex++;
     }
