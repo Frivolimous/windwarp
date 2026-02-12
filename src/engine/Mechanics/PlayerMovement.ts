@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { GameEvents } from "../../services/GameEvents";
-import { GameEnvironment, WorldResponse } from "../Objects/GameEnvironment";
+import { GameEnvironment, CollisionResponse } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
 
 export class PlayerMovement {
@@ -448,9 +448,7 @@ export class PlayerMovement {
     }
   }
 
-  public tickClimbing(player: PlayerSprite) { 
-    // let worldCollision = this.world.checkWorld(player.getCollider());
-    
+  public tickClimbing(player: PlayerSprite) {     
     // 1. Player Action
     // no actions
 
@@ -640,7 +638,7 @@ export class PlayerMovement {
     }
   }
 
-  public checkIfFall(player: PlayerSprite, vCollision: WorldResponse): Boolean {
+  public checkIfFall(player: PlayerSprite, vCollision: CollisionResponse): Boolean {
     if (vCollision.down > 0) {
       if (player.movementState === 'crouching' || player.movementState === 'crawling' || player.movementState === 'rolling') {
         player.setMovementState('falling');

@@ -4,10 +4,10 @@ import { GameCanvas } from "./GameCanvas";
 import { PlayerSprite } from "./PlayerSprite";
 
 export class GameEnvironment {
-  private wallLeft = 0;
-  private wallRight = 1900;
+  private worldLeft = 0;
+  private worldRight = 1900;
   
-  public floorHeight = 900;
+  public worldBottom = 900;
   public objects: IGameBlock[] = [];
 
   public data: ILevelData;
@@ -18,13 +18,13 @@ export class GameEnvironment {
 
   setupLevel(data: ILevelData) { 
     this.data = data; 
-    this.wallRight = data.width;
-    this.floorHeight = data.height;
+    this.worldRight = data.width;
+    this.worldBottom = data.height;
     this.objects = data.blocks;
   }
 
-  public checkWorld(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
-    let response: WorldResponse = {
+  public checkWorld(sprite: {x: number, y: number, width: number, height: number}, isPlayer = true): CollisionResponse {
+    let response: CollisionResponse = {
       up: Infinity,
       down: Infinity,
       left: Infinity,
@@ -34,20 +34,20 @@ export class GameEnvironment {
       leftBlock: null,
       rightBlock: null,
     }
-    response.down = this.floorHeight - rect.y - rect.height;
-    response.left = rect.x - this.wallLeft;
-    response.right = this.wallRight - rect.x - rect.width;
+    response.down = this.worldBottom - sprite.y - sprite.height;
+    response.left = sprite.x - this.worldLeft;
+    response.right = this.worldRight - sprite.x - sprite.width;
 
     this.objects.forEach(obj => {
-      if (obj.type === 'ghost') return;
+      if (obj.type === 'secret') return;
       if (isPlayer && obj.usedByPlayer) return;
       if (!isPlayer && obj.usedbyGhost) return;
       
-      let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
-      let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
+      let dX = sprite.x + sprite.width / 2 - obj.x - obj.width / 2;
+      let dY = sprite.y + sprite.height / 2 - obj.y - obj.height / 2;
 
-      let mX = (rect.width + obj.width) / 2;
-      let mY = (rect.height + obj.height) / 2;
+      let mX = (sprite.width + obj.width) / 2;
+      let mY = (sprite.height + obj.height) / 2;
 
       let oX = Math.abs(dX) - mX;
       let oY = Math.abs(dY) - mY;
@@ -102,31 +102,27 @@ export class GameEnvironment {
     
     return response;
   }
-  
-  public checkVertical(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
-    let response: WorldResponse = {
+
+  public checkVertical(sprite: {x: number, y: number, width: number, height: number}, isPlayer = true): CollisionResponse {
+    let response: CollisionResponse = {
       up: Infinity,
       down: Infinity,
-      left: Infinity,
-      right: Infinity,
       upBlock: null,
       downBlock: null,
-      leftBlock: null,
-      rightBlock: null,
     }
 
-    response.down = this.floorHeight - rect.y - rect.height;
+    response.down = this.worldBottom - sprite.y - sprite.height;
 
     this.objects.forEach(obj => {
-      if (obj.type === 'ghost') return;
+      if (obj.type === 'secret') return;
       if (isPlayer && obj.usedByPlayer) return;
       if (!isPlayer && obj.usedbyGhost) return;
 
-      let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
-      let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
+      let dX = sprite.x + sprite.width / 2 - obj.x - obj.width / 2;
+      let dY = sprite.y + sprite.height / 2 - obj.y - obj.height / 2;
 
-      let mX = (rect.width + obj.width) / 2;
-      let mY = (rect.height + obj.height) / 2;
+      let mX = (sprite.width + obj.width) / 2;
+      let mY = (sprite.height + obj.height) / 2;
 
       let oX = Math.abs(dX) - mX;
       let oY = Math.abs(dY) - mY;
@@ -145,32 +141,28 @@ export class GameEnvironment {
     return response;
   }
 
-  public checkHorizontal(rect: {x: number, y: number, width: number, height: number}, isPlayer = true): WorldResponse {
-    let response: WorldResponse = {
-      up: Infinity,
-      down: Infinity,
+  public checkHorizontal(sprite: {x: number, y: number, width: number, height: number}, isPlayer = true): CollisionResponse {
+    let response: CollisionResponse = {
       left: Infinity,
       right: Infinity,
-      upBlock: null,
-      downBlock: null,
       leftBlock: null,
       rightBlock: null,
     }
 
-    response.left = rect.x - this.wallLeft;
-    response.right = this.wallRight - rect.x - rect.width;
+    response.left = sprite.x - this.worldLeft;
+    response.right = this.worldRight - sprite.x - sprite.width;
 
 
     this.objects.forEach(obj => {
-      if (obj.type === 'ghost') return;
+      if (obj.type === 'secret') return;
       if (isPlayer && obj.usedByPlayer) return;
       if (!isPlayer && obj.usedbyGhost) return;
 
-      let dX = rect.x + rect.width / 2 - obj.x - obj.width / 2;
-      let dY = rect.y + rect.height / 2 - obj.y - obj.height / 2;
+      let dX = sprite.x + sprite.width / 2 - obj.x - obj.width / 2;
+      let dY = sprite.y + sprite.height / 2 - obj.y - obj.height / 2;
 
-      let mX = (rect.width + obj.width) / 2;
-      let mY = (rect.height + obj.height) / 2;
+      let mX = (sprite.width + obj.width) / 2;
+      let mY = (sprite.height + obj.height) / 2;
 
       let oX = Math.abs(dX) - mX;
       let oY = Math.abs(dY) - mY;
@@ -202,11 +194,11 @@ export class GameEnvironment {
   }
 }
 
-export interface WorldResponse {
-  down: number;
-  up: number;
-  left: number;
-  right: number;
+export interface CollisionResponse {
+  down?: number;
+  up?: number;
+  left?: number;
+  right?: number;
   downBlock?: IGameBlock;
   upBlock?: IGameBlock;
   leftBlock?: IGameBlock;

@@ -87,13 +87,13 @@ export class GameCanvas extends PIXI.Container {
           let bD = this.findBlockAt(objects, x, y + LevelLoader.TILE_SIZE);
   
           if (((b1 === undefined) !== (bR === undefined)) || (b1 !== undefined && (b1.type != bR.type))) {
-            if (b1 === undefined || bR === undefined || ((b1.type !== 'normal' || bR.type !== 'ghost') && (b1.type !== 'ghost' || bR.type !== 'normal'))) {
+            if (b1 === undefined || bR === undefined || ((b1.type !== 'normal' || bR.type !== 'secret') && (b1.type !== 'secret' || bR.type !== 'normal'))) {
               this.foreground.moveTo(x + LevelLoader.TILE_SIZE, y).lineTo(x + LevelLoader.TILE_SIZE, y + LevelLoader.TILE_SIZE).stroke({width: 2, color: 0});
             }
           }
   
           if (((b1 === undefined) !== (bD === undefined)) || (b1 !== undefined && b1.type != bD.type)) {
-            if (b1 === undefined || bD === undefined || ((b1.type !== 'normal' || bD.type !== 'ghost') && (b1.type !== 'ghost' || bD.type !== 'normal'))) {
+            if (b1 === undefined || bD === undefined || ((b1.type !== 'normal' || bD.type !== 'secret') && (b1.type !== 'secret' || bD.type !== 'normal'))) {
               this.foreground.moveTo(x, y + LevelLoader.TILE_SIZE).lineTo(x + LevelLoader.TILE_SIZE, y + LevelLoader.TILE_SIZE).stroke({width: 2, color: 0});
             }
           }

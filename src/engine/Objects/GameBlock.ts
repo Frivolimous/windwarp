@@ -57,7 +57,7 @@ const BlockColors: Record<GameBlockType, number> = {
     door: 0x00aaaa,
     player: 0xff0000,
     goal: 0xffffff,
-    ghost: 0x00bb22,
+    secret: 0x00bb22,
     checkpoint: 0x44eeff,
 };
 
@@ -73,4 +73,4 @@ export interface IGameBlock {
 
 }
 
-export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | "player" | "goal" | "ghost" | "checkpoint";
+export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | "player" | "goal" | "secret" | "checkpoint";

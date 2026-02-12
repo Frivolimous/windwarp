@@ -175,7 +175,7 @@ const ColorMapping: Record<string, GameBlockType> = {
   '255,170,0': 'exploding',
   '255,0,0': 'player',
   '255,255,255': 'goal',
-  '0,0,0': 'ghost',
+  '0,0,0': 'secret',
   '0,255,255': 'checkpoint',
 }
 
@@ -185,7 +185,7 @@ enum TileMap {
   'exploding' = 2,
   'checkpoint' = 3,
   'goal' = 4,
-  'ghost' = 5
+  'secret' = 5
 }
 
 const TileMapOptions: Record<GameBlockType, any> = {
@@ -194,7 +194,7 @@ const TileMapOptions: Record<GameBlockType, any> = {
   'exploding': {u:LevelLoader.TILE_SIZE*2, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
   'checkpoint': {u:LevelLoader.TILE_SIZE*3, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
   'goal': {u:LevelLoader.TILE_SIZE*4, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
-  'ghost': {u:0, v: LevelLoader.TILE_SIZE, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
+  'secret': {u:0, v: LevelLoader.TILE_SIZE, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
   'player': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
   'switch': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},
   'door': {u:0, v: 0, tileWidth: LevelLoader.TILE_SIZE, tileHeight: LevelLoader.TILE_SIZE},

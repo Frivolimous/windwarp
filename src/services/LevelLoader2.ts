@@ -259,7 +259,7 @@ const ColorMapping: Record<string, GameBlockType> = {
   '255,170,0': 'exploding',
   '255,0,0': 'player',
   '255,255,255': 'goal',
-  '0,0,0': 'ghost',
+  '0,0,0': 'secret',
   '0,255,255': 'checkpoint',
 }
 
