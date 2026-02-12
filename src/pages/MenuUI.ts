@@ -42,11 +42,13 @@ export class MenuUI extends BaseUI {
     let ori2 = new Button({buttonLabel: 'Sky Base', onClick: () => this.startLevel(3), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori3 = new Button({buttonLabel: 'AOAO', onClick: () => this.startLevel(5), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     let ori4 = new Button({buttonLabel: 'Secret Passage', onClick: () => this.startLevel(6), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    let ori5 = new Button({buttonLabel: 'Level AW', onClick: () => this.startLevel(10), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
     oriLevels.position.set(525, 150);
     ori1.position.set(525, 190);
     ori2.position.set(525, 240);
     ori3.position.set(525, 290);
     ori4.position.set(525, 340);
+    ori5.position.set(525, 390);
 
     this.ghostB = new Button({buttonLabel: 'No Ghost', onClick: this.toggleGhost, color: 0x00ccff, width: 90, height: 30, labelStyle: {fontSize: 15 }});
     this.ghostB.position.set(50, 505);
@@ -63,7 +65,7 @@ export class MenuUI extends BaseUI {
     this.addChild(background, title);
     this.addChild(abaLevels, aba1, aba2, aba3);
     this.addChild(talyaLevels, talya1, talya2, talya3);
-    this.addChild(oriLevels, ori1, ori2, ori3, ori4);
+    this.addChild(oriLevels, ori1, ori2, ori3, ori4, ori5);
 
     this.addChild(this.playerB, this.player1Avatar, this.player2Avatar);
     this.addChild(this.ghostB);

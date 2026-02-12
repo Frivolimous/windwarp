@@ -91,8 +91,7 @@ export class GameControl {
     if (i < 0) return;
     this.currentLevelIndex = i;
     this.running = true;
-    let data = _.cloneDeep(LevelLoader.levelData[i]);
-    this.loadLevelFromData(data);
+    LevelLoader.makeLevelDataFromUrl(LevelLoader.levelSources[i]).then(data => this.loadLevelFromData(data))
   }
 
   loadLevelFromData(data: ILevelData) {
@@ -211,7 +210,7 @@ export class GameControl {
     this.keyboard.addKey({ keys: ['enter'], onDown: () => this.loadLevel(this.currentLevelIndex) });
     this.keyboard.addKey({ keys: ['p'], onDown: () => this.running = !this.running });
 
-    for (let i = 0; i < LevelLoader.levelData.length; i++) {
+    for (let i = 0; i <= 9; i++) {
       let level = i;
       this.keyboard.addKey({ keys: [(level + 1).toString()], onDown: () => this.loadLevel(level) });
     }

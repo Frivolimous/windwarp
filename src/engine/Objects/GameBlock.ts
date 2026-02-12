@@ -2,16 +2,18 @@ import * as PIXI from "pixi.js";
 import { JMTween } from "../../JMGE/JMTween";
 import { Firework } from "../../JMGE/effects/Firework";
 import { LevelLoader } from "../../services/LevelLoader";
+import { Tilemap } from "@pixi/tilemap";
 
 export class GameBlock extends PIXI.Container {
     public animating = false;
-    public tiling: PIXI.TilingSprite;
+    public tiling: Tilemap;
     public overlay = new PIXI.Graphics();
 
     constructor(public config: IGameBlock) {
         super();
-        this.tiling = new PIXI.TilingSprite(LevelLoader.tileTextures[2], config.width, config.height);
+        this.tiling = LevelLoader.drawBlock(config);
         this.addChild(this.tiling);
+        
         if (LevelLoader.DRAW_OUTLINES) {
             this.addChild(this.overlay);
             this.overlay.rect(0, 0, config.width, config.height);

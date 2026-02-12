@@ -52,7 +52,9 @@ export const Facade = new class {
 
     // await FontLoader.load(_.map(Fonts));
 
-    LevelLoader.initialize(() => this.init());    
+    await LevelLoader.initialize();    
+
+    this.init();
   }
 
   init() {
