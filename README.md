@@ -13,7 +13,6 @@ Menu
 - level load - loading screen
 
 Map Editor / Bitmap Editor
-Color tolerance
 background colors
 
 Collision Detection: 
@@ -35,6 +34,5 @@ Tiles:
 - Doors
 - switches
 - lava
-- mud
 - speed boost
 

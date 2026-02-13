@@ -1,11 +1,12 @@
 import * as PIXI from "pixi.js";
 import { GameEvents } from "../../services/GameEvents";
-import { Firework, IExplosion } from "../../JMGE/effects/Firework";
+import { Firework } from "../../JMGE/effects/Firework";
 import _ from "lodash";
 import { Facade } from "../../main";
 import { GameCanvas } from "./GameCanvas";
 import { JMEasing } from "../../JMGE/JMTween";
 import { LevelLoader } from "../../services/LevelLoader";
+import { BlockColors, IGameBlock } from "./GameBlock";
 
 export class PlayerSprite extends PIXI.Container {
   public keys: Record<PlayerKeys, boolean> = {
@@ -26,6 +27,8 @@ export class PlayerSprite extends PIXI.Container {
   public wallGrabsRemaining = 1;
 
   public movementState: MovementState = 'idle';
+  public stepBlock: IGameBlock;
+  // public inMud = false;
 
   public vX = 0;
   public vY = 0;
@@ -116,12 +119,20 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   setMovementState(state: MovementState) {
+    let tint = 0x888888;
+    if (this.stepBlock) {
+      tint = BlockColors[this.stepBlock.type];
+    }
+
     if (state === 'ascending') {
-      Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
+      if (this.movementState !== 'jetpacking') {
+        Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
+      }
     } else if ((this.movementState === 'falling' || this.movementState === 'diving') && state === 'walking') {
-      Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
+      Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
     }
     this.movementState = state;
+    // this.movementStateData = MovementStateDataRecord[state];
     GameEvents.ACTIVITY_LOG.publish({ slug: 'PLAYER_STATE', text: state });
   }
 
@@ -149,10 +160,14 @@ export class PlayerSprite extends PIXI.Container {
     if (this.stepDelay <= 0) {
       this.stepDelay = this.maxStepDelay;
       if (this.movementState === 'walking' || this.movementState === 'rolling') {
-        STEP_PARTICLE.x = this.x;
-        STEP_PARTICLE.y = this.y;
-
-        Firework.makeExplosion(this.parent, _.defaults(this.getFootPoint(), STEP_PARTICLE));
+        let tint = 0x888888;
+        if (this.stepBlock) {
+          tint = BlockColors[this.stepBlock.type];
+        }
+        
+        Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 2, tint, 
+                              angle_min: Math.PI, angle_max: Math.PI * 2, 
+                              mag_min: 0.3, mag_max: 0.8});
       }
     }
 
@@ -410,12 +425,305 @@ export class PlayerSprite extends PIXI.Container {
   }
 }
 
-const STEP_PARTICLE: IExplosion = {
-  x: 0, y: 0, count: 3, tint: 0x00aa11
-}
-
 export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |
   'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking' | 'victory';
 
 
 export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
+
+// export const MovementStateDataRecord: Record<MovementState, MovementStateData> = {
+//   idle: {
+//     canJump: true,
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('crouching'),
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.setMovementState('walking');
+//       player.vX += data.moveSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       player.setMovementState('crouching');
+//     },
+//     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       data.checkIfFall(player, vCollision);
+//     },
+//   },
+//   walking: {
+//     canJump: true,
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
+//       if (Math.abs(player.vX) > data.rollSpeedNeeded) {
+//         player.setMovementState('rolling');
+//         player.landTime = 0;
+//         player.vX = _.clamp(player.vX * data.rollSpeedMult, -data.maxRollSpeed, data.maxRollSpeed);
+//         player.rollTime = data.rollTime;
+//         return;
+//       } else {
+//         player.setMovementState('crawling');
+//       }
+//     },
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.moveSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       player.setMovementState('crawling');
+//     },
+//     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       data.checkIfFall(player, vCollision);
+//     },
+//   },
+//   crouching: {
+//     noCollideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (!player.keys.down) player.setMovementState('idle');
+//     },
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.setMovementState('crawling');
+//       player.vX += data.moveSpeed * direction * data.crouchSpeedMult;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//     },
+//     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       data.checkIfFall(player, vCollision);
+//     },
+//   },
+//   crawling: {
+//     noCollideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (!player.keys.down) player.setMovementState('walking');
+//     },
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.moveSpeed * direction * data.crouchSpeedMult;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//     },
+//     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       data.checkIfFall(player, vCollision);
+//     },
+//   },
+//   rolling: {
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//     },
+//     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       data.checkIfFall(player, vCollision);
+//     },
+//   },
+//   ascending: {
+//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
+//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.setMovementState('diving');
+//       player.vY = Math.max(data.divingSpeed, player.vY);
+//     },
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.airMoveSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY += data.gravity;
+//       player.vY = Math.min(player.vY, data.terminalVelocity);
+//       player.y += player.vY;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       player.y -= vCollision.up;
+//       player.setMovementState('falling');
+//       if (vCollision.upBlock && (vCollision.upBlock.type === 'spring' || vCollision.upBlock.type === 'exploding')) {
+//         if (vCollision.upBlock.type === 'exploding') {
+//           data.world.getObject(vCollision.upBlock).explode();
+//           if (!player.isGhost) vCollision.upBlock.usedByPlayer = true;
+//           if (player.isGhost) vCollision.upBlock.usedbyGhost = true;
+//         }
+//         player.vY = -data.springSpeed;
+//         return;
+//       } else {
+//         player.vY = 0;
+//         return;
+//       }
+//     }
+//   },
+//   falling: {
+//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
+//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.setMovementState('diving');
+//       player.vY = Math.max(data.divingSpeed, player.vY);
+//     },
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.airMoveSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY += data.gravity;
+//       player.vY = Math.min(player.vY, data.terminalVelocity);
+//       player.y += player.vY;
+//     },
+//     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (vCollision.downBlock) {
+//         player.stepBlock = vCollision.downBlock;
+
+//         player.landTime = data.landTimeBase + Math.abs(player.vY) * data.landTimeVMult;
+
+//         player.y += vCollision.down;
+//         player.vY = 0;
+  
+//         if (player.movementState === 'diving') player.setMovementState('crawling');
+//         else player.setMovementState('walking');
+        
+//         player.doubleJumpsRemaining = data.maxDoubleJumps;
+//         player.wallGrabsRemaining = data.maxWallGrabs;
+//         return;
+//       } else {
+//         if (vCollision.down < -player.height) {
+//           data.respawn(player);
+//           return;
+//         }
+//       }
+//     }
+//   },
+//   diving: {
+//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
+//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.airMoveSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY += data.gravity;
+//       player.vY = Math.min(player.vY, data.terminalVelocity);
+//       player.y += player.vY;
+//     },
+//     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (vCollision.downBlock) {
+//         player.stepBlock = vCollision.downBlock;
+
+//         player.landTime = data.landTimeBase + Math.abs(player.vY) * data.landTimeVMult;
+
+//         player.y += vCollision.down;
+//         player.vY = 0;
+  
+//         if (player.movementState === 'diving') player.setMovementState('crawling');
+//         else player.setMovementState('walking');
+        
+//         player.doubleJumpsRemaining = data.maxDoubleJumps;
+//         player.wallGrabsRemaining = data.maxWallGrabs;
+//         return;
+//       } else {
+//         if (vCollision.down < -player.height) {
+//           data.respawn(player);
+//           return;
+//         }
+//       }
+//     }
+//   },
+//   'wall-grab-left': {
+//     canJump: true,
+//     onJump: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vX = data.kickVX;
+//       player.bounceTime = data.kickTime;
+//     },
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('falling'),
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//       player.y += data.grabSlideSpeed;
+//     },
+//     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (vCollision.down < 0) {
+//         player.y += vCollision.down;
+//         player.setMovementState('idle');
+//         return;
+//       }
+//     },
+
+//   },
+//   'wall-grab-right': {
+//     canJump: true,
+//     onJump: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vX = -data.kickVX;
+//       player.bounceTime = data.kickTime;
+//     },
+//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('falling'),
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//       player.y += data.grabSlideSpeed;
+//     },
+//     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (vCollision.down < 0) {
+//         player.y += vCollision.down;
+//         player.setMovementState('idle');
+//         return;
+//       }
+//     },
+//   },
+//   'climbing-left': {
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//       player.y-= data.climbSpeed;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       player.y += vCollision.up;
+//       player.setMovementState('falling');
+//     }
+//   },
+//   'climbing-right': {
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY = 0;
+//       player.y-= data.climbSpeed;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       player.y += vCollision.up;
+//       player.setMovementState('falling');
+//     }
+//   },
+//   jetpacking: {    
+//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
+//       player.vX += data.jetpackXSpeed * direction;
+//     },
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
+//       player.vY += data.jetpackYSpeed;
+//       player.vY = Math.min(player.vY, data.terminalVelocity);
+//       player.vY = Math.max(player.vY, data.jetpackMaxSpeed);
+//       player.y += player.vY;
+//     },
+//     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (vCollision.up < 0 && player.vY <= 0) {
+//         if (vCollision.upBlock && (vCollision.upBlock.type === 'spring' || vCollision.upBlock.type === 'exploding')) {
+//           if (vCollision.upBlock.type === 'exploding') {
+//               data.world.getObject(vCollision.upBlock).explode();
+//               if (!player.isGhost) vCollision.upBlock.usedByPlayer = true;
+//               if (player.isGhost) vCollision.upBlock.usedbyGhost = true;
+//             }
+//           player.y -= vCollision.up + player.vY;
+//           player.vY = -data.springSpeed;
+//         } else {
+//           player.y -= vCollision.up + player.vY;
+//           player.vY = data.bounce * player.vY;
+//           player.bounceTime = data.bounceTime;
+//         }
+//       }
+//     },
+//     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
+//       if (player.vY < 0) return;
+      
+//       player.y += vCollision.down - player.vY;
+//       player.vY = data.bounce * player.vY;
+//       player.bounceTime = data.bounceTime;
+
+//     },
+//   },
+//   victory: {
+//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {},
+//   },
+// }
+
+// export interface MovementStateData {
+//   canJump?: boolean | ((player: PlayerSprite) => boolean);
+//   onJump?: (player: PlayerSprite, data: PlayerMovement) => void;
+//   onDown?: (player: PlayerSprite, data: PlayerMovement) => void;
+//   onLR?: (player: PlayerSprite, direction: 1 | -1, data: PlayerMovement) => void;
+//   updateVertical: (player: PlayerSprite, data: PlayerMovement) => void;
+//   collideUp?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
+//   noCollideUp?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
+//   collideDown?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
+//   noCollideDown?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
+// }

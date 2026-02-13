@@ -15,6 +15,7 @@ export class LevelLoader {
     'assets/Level9.bmp',
     'assets/Level10.bmp',
     'assets/Level11.bmp',
+    'assets/Level12.bmp',
   ];
 
   static TilemapSrc = 'assets/Tilemap24PLUS.png';
@@ -129,7 +130,7 @@ export class LevelLoader {
           return 'checkpoint';
         }
       }
-    } else {
+    } else if (r === 2) {
       if (g === 0) {
         if (b === 0) {
           return 'player';
@@ -147,6 +148,14 @@ export class LevelLoader {
           return 'exploding';
         } else {
 
+        }
+      }
+    } else if (r === 1) {
+      if (g === 0) {
+
+      } else {
+        if (b === 0) {
+          return 'mud';
         }
       }
     }
@@ -307,4 +316,7 @@ const HalfTileTypeOffsets: Record<GameBlockType, [number, number]> = {
   goal: [0, 3],
   secret: [5 , 3],
   checkpoint: [15, 0],
+  mud: [10, 3],
+  speed: [15, 3],
+  lava: [0, 6],
 };

@@ -51,17 +51,20 @@ export class GameBlock extends PIXI.Container {
     }
 }
 
-const BlockColors: Record<GameBlockType, number> = {
-    normal: 0x11cc33,
-    spring: 0xffff66,
-    exploding: 0xff6633,
+export const BlockColors: Record<GameBlockType, number> = {
+    normal: 0x00aa11,
+    spring: 0xcccc33,
+    exploding: 0xcc4411,
     switch: 0x44eeff,
     door: 0x00aaaa,
     player: 0xff0000,
-    goal: 0xffffff,
+    goal: 0x555555,
     secret: 0x00bb22,
-    checkpoint: 0x44eeff,
-};
+    checkpoint: 0x226699,
+    mud: 0x885522,
+    speed: 0xaa00aa,
+    lava: 0xff0000,
+}
 
 export interface IGameBlock {
     x: number;
@@ -75,4 +78,6 @@ export interface IGameBlock {
 
 }
 
-export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | "player" | "goal" | "secret" | "checkpoint";
+export type GameBlockType = "normal" | "spring" | "exploding" | "switch" | "door" | 
+                            "player" | "goal" | "secret" | "checkpoint" |
+                            "mud" | "lava" | "speed";
