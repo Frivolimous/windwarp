@@ -28,7 +28,15 @@ export class PlayerSprite extends PIXI.Container {
 
   public movementState: MovementState = 'idle';
   public stepBlock: IGameBlock;
+
   // public inMud = false;
+  public actionState: ActionState;
+
+  public isGrounded = false;
+  
+  get isCrouching() {
+    return (this.movementState === 'crouching' || this.movementState === 'crawling');
+  }
 
   public vX = 0;
   public vY = 0;
@@ -119,6 +127,8 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   setMovementState(state: MovementState) {
+    if (state === this.movementState) return;
+
     let tint = 0x888888;
     if (this.stepBlock) {
       tint = BlockColors[this.stepBlock.type];
@@ -428,20 +438,17 @@ export class PlayerSprite extends PIXI.Container {
 export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |
   'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking' | 'victory';
 
-
 export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
+
+export interface ActionState {
+  slug: 'diving' | 'rolling' | 'wall-grab' | 'climbing' | 'victory';
+  direction: -1 | 1;
+  timeRemaining: number;
+  maxTime: number;
+}
 
 // export const MovementStateDataRecord: Record<MovementState, MovementStateData> = {
 //   idle: {
-//     canJump: true,
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('crouching'),
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.setMovementState('walking');
-//       player.vX += data.moveSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       player.setMovementState('crouching');
 //     },
@@ -450,24 +457,6 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     },
 //   },
 //   walking: {
-//     canJump: true,
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
-//       if (Math.abs(player.vX) > data.rollSpeedNeeded) {
-//         player.setMovementState('rolling');
-//         player.landTime = 0;
-//         player.vX = _.clamp(player.vX * data.rollSpeedMult, -data.maxRollSpeed, data.maxRollSpeed);
-//         player.rollTime = data.rollTime;
-//         return;
-//       } else {
-//         player.setMovementState('crawling');
-//       }
-//     },
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.moveSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       player.setMovementState('crawling');
 //     },
@@ -479,13 +468,6 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     noCollideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (!player.keys.down) player.setMovementState('idle');
 //     },
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.setMovementState('crawling');
-//       player.vX += data.moveSpeed * direction * data.crouchSpeedMult;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//     },
 //     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       data.checkIfFall(player, vCollision);
 //     },
@@ -494,39 +476,16 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     noCollideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (!player.keys.down) player.setMovementState('walking');
 //     },
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.moveSpeed * direction * data.crouchSpeedMult;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//     },
 //     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       data.checkIfFall(player, vCollision);
 //     },
 //   },
 //   rolling: {
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//     },
 //     noCollideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       data.checkIfFall(player, vCollision);
 //     },
 //   },
 //   ascending: {
-//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
-//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.setMovementState('diving');
-//       player.vY = Math.max(data.divingSpeed, player.vY);
-//     },
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.airMoveSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY += data.gravity;
-//       player.vY = Math.min(player.vY, data.terminalVelocity);
-//       player.y += player.vY;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       player.y -= vCollision.up;
 //       player.setMovementState('falling');
@@ -545,20 +504,6 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     }
 //   },
 //   falling: {
-//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
-//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.setMovementState('diving');
-//       player.vY = Math.max(data.divingSpeed, player.vY);
-//     },
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.airMoveSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY += data.gravity;
-//       player.vY = Math.min(player.vY, data.terminalVelocity);
-//       player.y += player.vY;
-//     },
 //     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (vCollision.downBlock) {
 //         player.stepBlock = vCollision.downBlock;
@@ -583,16 +528,6 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     }
 //   },
 //   diving: {
-//     canJump: (player: PlayerSprite) => player.doubleJumpsRemaining > 0,
-//     onJump: (player:PlayerSprite) => player.doubleJumpsRemaining--,
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.airMoveSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY += data.gravity;
-//       player.vY = Math.min(player.vY, data.terminalVelocity);
-//       player.y += player.vY;
-//     },
 //     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (vCollision.downBlock) {
 //         player.stepBlock = vCollision.downBlock;
@@ -617,16 +552,6 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     }
 //   },
 //   'wall-grab-left': {
-//     canJump: true,
-//     onJump: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vX = data.kickVX;
-//       player.bounceTime = data.kickTime;
-//     },
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('falling'),
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//       player.y += data.grabSlideSpeed;
-//     },
 //     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (vCollision.down < 0) {
 //         player.y += vCollision.down;
@@ -634,19 +559,8 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //         return;
 //       }
 //     },
-
 //   },
 //   'wall-grab-right': {
-//     canJump: true,
-//     onJump: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vX = -data.kickVX;
-//       player.bounceTime = data.kickTime;
-//     },
-//     onDown: (player:PlayerSprite, data: PlayerMovement) => player.setMovementState('falling'),
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//       player.y += data.grabSlideSpeed;
-//     },
 //     collideDown: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (vCollision.down < 0) {
 //         player.y += vCollision.down;
@@ -656,35 +570,18 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     },
 //   },
 //   'climbing-left': {
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//       player.y-= data.climbSpeed;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       player.y += vCollision.up;
 //       player.setMovementState('falling');
 //     }
 //   },
 //   'climbing-right': {
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY = 0;
-//       player.y-= data.climbSpeed;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       player.y += vCollision.up;
 //       player.setMovementState('falling');
 //     }
 //   },
 //   jetpacking: {    
-//     onLR: (player: PlayerSprite, direction: number, data: PlayerMovement) => {
-//       player.vX += data.jetpackXSpeed * direction;
-//     },
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {
-//       player.vY += data.jetpackYSpeed;
-//       player.vY = Math.min(player.vY, data.terminalVelocity);
-//       player.vY = Math.max(player.vY, data.jetpackMaxSpeed);
-//       player.y += player.vY;
-//     },
 //     collideUp: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => {
 //       if (vCollision.up < 0 && player.vY <= 0) {
 //         if (vCollision.upBlock && (vCollision.upBlock.type === 'spring' || vCollision.upBlock.type === 'exploding')) {
@@ -712,16 +609,10 @@ export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 //     },
 //   },
 //   victory: {
-//     updateVertical: (player:PlayerSprite, data: PlayerMovement) => {},
 //   },
 // }
 
 // export interface MovementStateData {
-//   canJump?: boolean | ((player: PlayerSprite) => boolean);
-//   onJump?: (player: PlayerSprite, data: PlayerMovement) => void;
-//   onDown?: (player: PlayerSprite, data: PlayerMovement) => void;
-//   onLR?: (player: PlayerSprite, direction: 1 | -1, data: PlayerMovement) => void;
-//   updateVertical: (player: PlayerSprite, data: PlayerMovement) => void;
 //   collideUp?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
 //   noCollideUp?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;
 //   collideDown?: (player: PlayerSprite, vCollision: CollisionResponse, data: PlayerMovement) => void;

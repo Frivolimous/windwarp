@@ -76,14 +76,12 @@ export class PlayerMovement {
   public playerTick = (player: PlayerSprite) => {
     if (!player) return;
 
-    if (player.keys.jetpack) {
-      player.setMovementState('jetpacking');
-    }
-
     player.landTime > 0 && player.landTime--;
     player.bounceTime > 0 && player.bounceTime--;
     player.grabTime > 0 && player.grabTime--;
     player.rollTime > 0 && player.rollTime--;
+
+    this.updatePlayerActions(player);
 
     switch(player.movementState) {
       case 'idle': case 'crouching': this.tickIdle(player); break;
@@ -96,46 +94,155 @@ export class PlayerMovement {
       case 'victory': break;
     }
 
-    if (player.holdUp && !player.keys.up) player.holdUp = false;
-
     GameEvents.ACTIVITY_LOG.publish({slug: 'VELOCITY', text: `${player.vX.toFixed(2)}, ${player.vY.toFixed(2)}`});
+  }
+
+  public updatePlayerActions(player: PlayerSprite) {
+    if (player.keys.jetpack) {
+      player.setMovementState('jetpacking');
+    } else if (player.movementState === 'jetpacking') {
+        player.setMovementState('ascending');
+    }
+
+    if (player.keys.up) {
+      if (this.canJump(player)) {
+        if (this.isAirborn(player)) player.doubleJumpsRemaining--;
+        if (player.movementState === 'wall-grab-left') {
+          player.vX = this.kickVX;
+          player.bounceTime = this.kickTime;
+        } else if (player.movementState === 'wall-grab-right') {
+          player.vX = -this.kickVX;
+          player.bounceTime = this.kickTime;
+        }
+        
+        let tvc = this.world.checkVertical(player.getCollider(), player.isGhost);
+        if (tvc.down < this.minMudJumpStop && tvc.downBlock && tvc.downBlock.type === 'mud') {
+          let percent = tvc.down / this.mudMaxSink;
+          player.vY = this.mudJumpSpeedMin + percent * this.mudJumpSpeedMult;
+        } else {
+          player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
+        }
+
+        player.setMovementState('ascending');
+        player.stepBlock = null;
+        player.holdUp = true;
+      } else {
+        if (player.movementState === 'ascending') player.holdUp = true;
+      }
+    } else {
+      player.holdUp = false;
+    }
+
+    if (player.keys.down) {
+      if (player.movementState === 'idle') player.setMovementState('crouching');
+      if (player.movementState === 'walking') {
+        if (Math.abs(player.vX) > this.rollSpeedNeeded) {
+          player.setMovementState('rolling');
+          player.landTime = 0;
+          player.vX = _.clamp(player.vX * this.rollSpeedMult, -this.maxRollSpeed, this.maxRollSpeed);
+          player.rollTime = this.rollTime;
+        } else {
+          player.setMovementState('crawling');
+        }
+      } else if (player.movementState === 'ascending' || player.movementState === 'falling') {
+        player.setMovementState('diving');
+        player.vY = Math.max(this.divingSpeed, player.vY);
+      } else if (player.movementState === 'wall-grab-left' || player.movementState === 'wall-grab-right') {
+        player.setMovementState('falling');
+      }
+    } else {
+      if (player.movementState === 'crouching' && this.world.checkVertical(player.getCollider('idle'), player.isGhost).up >= 0) {
+        player.setMovementState('idle');
+      } else if (player.movementState === 'crawling' && this.world.checkVertical(player.getCollider('walking'), player.isGhost).up >= 0) {
+        player.setMovementState('walking');
+      }
+    }
+
+    if (this.isAirborn(player)) {
+      player.vY = Math.min(player.vY + this.gravity, this.terminalVelocity);
+    } else if (player.movementState === 'jetpacking') {
+      player.vY = Math.max(player.vY + this.jetpackYSpeed, this.jetpackMaxSpeed);
+    }
+
+    let friction = 1;
+    let speed = 0;
+
+    if (player.movementState === 'idle' || player.movementState === 'walking') {
+      speed = this.moveSpeed;
+      friction = this.friction;
+      player.setMovementState('walking');
+    } else if (player.movementState === 'crouching' || player.movementState === 'crawling') {
+      speed = this.moveSpeed * this.crouchSpeedMult;
+      friction = this.friction;
+      player.setMovementState('crawling');
+    } else if (this.isAirborn(player)) {
+      speed = this.airMoveSpeed;
+      friction = this.airFriction;
+    } else if (player.movementState === 'jetpacking') {
+      speed = this.jetpackXSpeed;
+      friction = this.airFriction;
+    }
+    if (player.landTime > 0) friction *= this.extraLandFriction;
+
+    if (player.keys.left || player.keys.right) {
+      if (player.bounceTime <= 0) {
+        let direction = 0;
+  
+        if (player.keys.left) direction--;
+        if (player.keys.right) direction++;
+
+        player.vX += speed * direction;
+      }
+    }
+
+    player.vX *= friction;
+    player.vX = _.clamp(player.vX, -this.maxSpeed, this.maxSpeed);
+    if (Math.abs(player.vX) < this.minSpeed) {
+      player.vX = 0;
+      if (player.movementState === 'walking') player.movementState = 'idle';
+      if (player.movementState === 'crawling') player.movementState = 'crouching';
+    }
+
+
+  }
+
+  public canJump(player: PlayerSprite) {
+    if (player.landTime > 0) return false;
+    if (player.holdUp) return false;
+    if (player.movementState === 'idle' || player.movementState === 'walking') return true;
+    if (player.movementState === 'wall-grab-left' || player.movementState === 'wall-grab-right') return true;
+    if (this.isAirborn(player) && player.doubleJumpsRemaining > 0) return true;
+
+    return false;
+  }
+
+  public isGrounded(player: PlayerSprite) {
+    switch(player.movementState) {
+      case 'idle': case 'walking': case 'crouching': case 'crawling': case 'rolling':
+        return true;
+    }
+
+    return false;
+  }
+
+  public isAirborn(player: PlayerSprite) {
+    switch(player.movementState) {
+      case 'ascending': case 'falling': case 'diving':
+        return true;
+    }
+
+    return false;
   }
 
   // if player is IDLE or CROUCHING
   public tickIdle(player: PlayerSprite) {
-    // 1. determine player actions
-    if (player.keys.up && player.movementState === 'idle' && player.landTime <= 0) {
-      if (this.startJump(player)) return;
-    }
-
-    if (player.keys.down && player.movementState !== 'crouching') {
-      player.setMovementState('crouching');
-    } else if (!player.keys.down && player.movementState === 'crouching' && this.world.checkVertical(player.getCollider('idle'), !player.isGhost).up >= 0) {
-      player.setMovementState('idle');
-    }
-
-    if ((player.keys.right) ||
-        (player.keys.left)) {
-      player.setMovementState(player.movementState === 'idle' ? 'walking' : 'crawling');
-      this.tickWalk(player);
-      return;
-    }
-
-    // VERTICAL
-    player.vY = 0;
-    player.y = player.y;
-
     let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
 
     if (vCollision.up < 0 && player.movementState === 'idle') player.setMovementState('crouching');
     if (this.checkIfFall(player, vCollision)) return;
 
     // HORIZONTAL
-    player.vX = 0;
-    player.x = player.x;
-
     let hCollision = this.world.checkHorizontal(player.getCollider(), player.isGhost);
-
 
     if (hCollision.left < 0 && (!hCollision.leftBlock || hCollision.leftBlock.type !== 'mud' || hCollision.leftBlock != vCollision.downBlock)) player.x -= hCollision.left;
     if (hCollision.right < 0 && (!hCollision.rightBlock || hCollision.rightBlock.type !== 'mud' || hCollision.rightBlock != vCollision.downBlock)) player.x += hCollision.right;
@@ -143,53 +250,11 @@ export class PlayerMovement {
 
   // if player is WALKING or CRAWLING
   public tickWalk(player: PlayerSprite) {
-    // 1. determine player actions
-    if (player.keys.up && player.movementState === 'walking' && player.landTime <= 0) {
-      if (this.startJump(player)) return;
-    }
-
-    if (player.keys.down && player.movementState === 'walking') {
-      if(Math.abs(player.vX) > this.rollSpeedNeeded) {
-        player.setMovementState('rolling');
-        player.landTime = 0;
-        player.vX = _.clamp(player.vX * this.rollSpeedMult, -this.maxRollSpeed, this.maxRollSpeed);
-        player.rollTime = this.rollTime;
-        this.tickRolling(player);
-        return;
-      } else {
-        player.setMovementState('crawling');
-      }
-    } else if (!player.keys.down && player.movementState === 'crawling' &&  this.world.checkVertical(player.getCollider('walking'), !player.isGhost).up >= 0) {
-      player.setMovementState('walking');
-    }
-
-    if (player.bounceTime <= 0) {
-      if (player.keys.right) {
-        player.vX += this.moveSpeed * (player.movementState === 'crawling' ? this.crouchSpeedMult : 1);
-      }
-      if (player.keys.left) {
-        player.vX -= this.moveSpeed * (player.movementState === 'crawling' ? this.crouchSpeedMult : 1)
-      }
-    }
-
     // VERTICAL
-    player.vY = 0;
-
     let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
     if (this.checkIfFall(player, vCollision)) return;
 
-
     // HORIZONTAL
-    player.vX *= this.friction;
-    player.landTime > 0 && (player.vX *= this.extraLandFriction);
-    player.vX = _.clamp(player.vX, -this.maxSpeed, this.maxSpeed);
-
-    if (Math.abs(player.vX) < this.minSpeed) {
-      player.vX = 0;
-      player.setMovementState(player.movementState === 'walking' ? 'idle' : 'crouching');
-      return;
-    }
-
     player.x += player.vX;
 
     // HORIZONTAL COLLISIONS
@@ -257,38 +322,8 @@ export class PlayerMovement {
 
   // if player is ASCENDING, FALLING or DIVING
   public tickAirborn(player: PlayerSprite) {
-    // 1. determine player actions
-    if (player.keys.up) {
-      if (!player.holdUp) {
-        if (player.doubleJumpsRemaining > 0) {
-          player.doubleJumpsRemaining -= 1;
-          if (this.startJump(player, true)) return;
-        } else {
-          if (player.movementState === 'ascending') {
-            player.holdUp = true;
-          }
-        }
-      }
-    }
-
-    if (player.keys.down && player.movementState !== 'diving') {
-      player.setMovementState('diving');
-      player.vY = Math.max(this.divingSpeed, player.vY);
-    }
-
-    if (player.bounceTime <= 0) {
-      if (player.keys.right) {
-        player.vX += this.airMoveSpeed;
-      }
-      if (player.keys.left) {
-        player.vX -= this.airMoveSpeed;
-      }
-    }
-
     // Y AXIS
     // 2. movement
-    player.vY += this.gravity;
-    player.vY = Math.min(player.vY, this.terminalVelocity);
     player.y += player.vY;
     
     // 3. Collision
@@ -338,8 +373,6 @@ export class PlayerMovement {
 
     // X AXIS
     // 2. movement
-    player.vX *= this.airFriction;
-    player.vX = _.clamp(player.vX, -this.maxSpeed, this.maxSpeed);
     player.x += player.vX;
 
     // 3. Collision
@@ -407,21 +440,9 @@ export class PlayerMovement {
 
   public tickGrab(player: PlayerSprite) {
     // PLAYER MOVEMENT
-    if (player.keys.up) {
-      let c = player.movementState === 'wall-grab-left' ? 1 : -1;
-      if (this.startJump(player)) {
-        player.vX = this.kickVX * c;
-        player.bounceTime = this.kickTime;
-        this.tickAirborn(player);
-        return;
-      }
-    } else if (player.keys.down || (player.keys.right && player.movementState === 'wall-grab-left') || (player.keys.left && player.movementState === 'wall-grab-right')) {
-      player.setMovementState('falling');
-      return;
-    }
-
     if (player.grabTime <= 0) {
       player.setMovementState('falling');
+      return;
     }
 
     // VERTICAL
@@ -444,9 +465,6 @@ export class PlayerMovement {
   }
 
   public tickClimbing(player: PlayerSprite) {     
-    // 1. Player Action
-    // no actions
-
     // VERTICAL
     player.y-= this.climbSpeed;
     let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
@@ -488,10 +506,6 @@ export class PlayerMovement {
   }
 
   public tickRolling(player: PlayerSprite) {
-    // 1. playerAction
-
-    // NONE
-
     if (player.rollTime <= 0) {
       player.bounceTime = this.rollAfterTime;
       player.setMovementState('crawling');
@@ -544,31 +558,7 @@ export class PlayerMovement {
   }
 
   public tickJetpacking(player: PlayerSprite) {
-    // 1. player controls
-    if (player.keys.jetpack === false) {
-      if (player.movementState === 'jetpacking') {
-        player.setMovementState('ascending');
-        this.tickAirborn(player);
-        return;
-      }
-    }
-
-    if (player.bounceTime <= 0) {
-      if (player.keys.right) {
-        player.vX += this.jetpackXSpeed;
-        player.vX = Math.min(player.vX, this.maxSpeed);
-      }
-      if (player.keys.left) {
-        player.vX -= this.jetpackXSpeed;
-        player.vX = Math.max(player.vX, -this.maxSpeed);
-      }
-    }
-
     // VERTICAL
-
-    player.vY += this.jetpackYSpeed;
-    player.vY = Math.min(player.vY, this.terminalVelocity);
-    player.vY = Math.max(player.vY, this.jetpackMaxSpeed);
     player.y += player.vY;
 
     let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
@@ -596,8 +586,6 @@ export class PlayerMovement {
     }
 
     // HORIZONTAL
-
-    player.vX *= this.airFriction;
     player.x += player.vX;
 
     let hCollision = this.world.checkHorizontal(player.getCollider(), player.isGhost);
@@ -678,23 +666,5 @@ export class PlayerMovement {
     }
 
     return false;
-  }
-
-  public startJump(player: PlayerSprite, doublejump?: boolean) {
-    if (player.holdUp) return false;
-    
-    player.setMovementState('ascending');
-    player.stepBlock = null;
-    
-    player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
-    player.holdUp = true;
-    
-    let tvc = this.world.checkVertical(player.getCollider(), player.isGhost);
-    if (tvc.down < this.minMudJumpStop && tvc.downBlock && tvc.downBlock.type === 'mud') {
-      let percent = tvc.down / this.mudMaxSink;
-      player.vY = this.mudJumpSpeedMin + percent * this.mudJumpSpeedMult;
-    }
-
-    return true;
   }
 }
