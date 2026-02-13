@@ -111,6 +111,48 @@ export class LevelLoader {
     return result;
   }
 
+  public static getTypeFromColor(r: number, g: number, b: number): GameBlockType {
+    r = Math.floor(r / 100);
+    g = Math.floor(g / 100);
+    b = Math.floor(b / 100);
+    if (r === 0) {
+      if (g === 0) {
+        if (b === 0) {
+          return 'secret';
+        } else {
+
+        }
+      } else {
+        if (b === 0) {
+          return 'normal';
+        } else {
+          return 'checkpoint';
+        }
+      }
+    } else {
+      if (g === 0) {
+        if (b === 0) {
+          return 'player';
+        } else {
+
+        }
+      } else if (g === 2) {
+        if (b === 0) {
+          return 'spring';
+        } else {
+          return 'goal';
+        }
+      } else {
+        if (b === 0) {
+          return 'exploding';
+        } else {
+
+        }
+      }
+    }
+    return undefined;
+  }
+
   public static makeLevelData(bitmap: ImageBitmap): ILevelData {
     let canvas = document.createElement('canvas');
     let ctx = canvas.getContext('2d');
@@ -135,7 +177,7 @@ export class LevelLoader {
       typeMap.push(row);
       for (let y = 0; y < bitmap.height; y++) {
         let index = (y * bitmap.width + x) * 4;
-        let type = ColorMapping[`${data[index]},${data[index + 1]},${data[index + 2]}`];
+        let type = this.getTypeFromColor(data[index], data[index + 1], data[index + 2]);
         row.push(type);
       }
     }
@@ -209,22 +251,13 @@ export class LevelLoader {
   }
 }
 
-const ColorMapping: Record<string, GameBlockType> = {
-  '0,255,0': 'normal',
-  '255,255,0': 'spring',
-  '255,170,0': 'exploding',
-  '255,0,0': 'player',
-  '255,255,255': 'goal',
-  '0,0,0': 'secret',
-  '0,255,255': 'checkpoint',
-}
-
 export interface ILevelData {
   blocks: IGameBlock[];
   width: number;
   height: number;
   startingPosition?: {x: number, y: number};
   img: Tilemap;
+  bgcolor?: number;
 }
 
 const HalfTileMapOffsets: Record<string, [number, number]> = {
@@ -262,7 +295,7 @@ const HalfTileMapOffsets: Record<string, [number, number]> = {
   '3TFT': [2, 1], //FLAT H
   '3TTF': [3, 0], //INNER CORNER
   '3TTT': [1, 1], // FULL
-}
+};
 
 const HalfTileTypeOffsets: Record<GameBlockType, [number, number]> = {
   normal: [0, 0],

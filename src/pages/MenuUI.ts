@@ -109,7 +109,8 @@ export class MenuUI extends BaseUI {
   }
 
   public navIn = () => {
-
+    Facade.gamePage.control.player && this.player1Avatar.addTexture(Facade.gamePage.control.player.head.texture);
+    Facade.gamePage.control.player2 && this.player2Avatar.addTexture(Facade.gamePage.control.player2.head.texture);
   }
 
   public navOut = () => {

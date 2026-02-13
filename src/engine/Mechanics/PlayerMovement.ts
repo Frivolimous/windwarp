@@ -5,14 +5,16 @@ import { PlayerSprite } from "../Objects/PlayerSprite";
 
 export class PlayerMovement {
   private moveSpeed = 1.2;
-  private maxSpeed = 9;
+  private maxSpeed = 12;
   private minSpeed = 0.12;
   private jumpSpeed = -9;
+  private airMoveSpeed = 0.28;
+  private jetpackXSpeed = 0.2;
+  private jetpackYSpeed = -0.3;
   private springSpeed = -18;
   private gravity = 0.54;
-  private airMoveSpeed = 0.6;
-  private terminalVelocity = 18;
-  private kickVX = 12;
+  private terminalVelocity = 12;
+  private kickVX = 6;
   private climbSpeed = 1.2;
   private minGrabSpeedX = 2.4;
   private maxGrabSpeedY = -1.2;
@@ -20,15 +22,15 @@ export class PlayerMovement {
   private grabSlideSpeed = 0.6;
   private maxRollSpeed = 9;
   private rollSpeedNeeded = 2.448;
-  private jetpackSpeed = -0.3;
   private jetpackMaxSpeed = -6;
   private climbInset = 3.6;
 
   private crouchSpeedMult = 0.5;
   private rollSpeedMult = 1.5;
   private friction = 0.8;
-  private airFriction = 0.9;
-  private bounce = -0.5;
+  private extraLandFriction = 0.8;
+  private airFriction = 0.95;
+  private bounce = -0.7;
   
   private bounceTime = 5;
   private airBounceTime = 1;
@@ -160,6 +162,7 @@ export class PlayerMovement {
     if (player.keys.down && player.movementState === 'walking') {
       if(Math.abs(player.vX) > this.rollSpeedNeeded) {
         player.setMovementState('rolling');
+        player.landTime = 0;
         player.vX = _.clamp(player.vX * this.rollSpeedMult, -this.maxRollSpeed, this.maxRollSpeed);
         player.rollTime = this.rollTime;
         this.tickRolling(player);
@@ -171,7 +174,7 @@ export class PlayerMovement {
       player.setMovementState('walking');
     }
 
-    if (player.bounceTime <= 0 && player.landTime <= 0) {
+    if (player.bounceTime <= 0) {
       if (player.keys.right) {
         player.vX += this.moveSpeed * (player.movementState === 'crawling' ? this.crouchSpeedMult : 1);
       }
@@ -189,6 +192,7 @@ export class PlayerMovement {
 
     // HORIZONTAL
     player.vX *= this.friction;
+    player.landTime > 0 && (player.vX *= this.extraLandFriction);
     player.vX = _.clamp(player.vX, -this.maxSpeed, this.maxSpeed);
 
     if (Math.abs(player.vX) < this.minSpeed) {
@@ -295,7 +299,7 @@ export class PlayerMovement {
     // Y AXIS
     // 2. movement
     player.vY += this.gravity;
-    player.vY = _.clamp(player.vY, -this.terminalVelocity, this.terminalVelocity);
+    player.vY = Math.min(player.vY, this.terminalVelocity);
     player.y += player.vY;
     
     // 3. Collision
@@ -560,18 +564,18 @@ export class PlayerMovement {
 
     if (player.bounceTime <= 0) {
       if (player.keys.right) {
-        player.vX += this.airMoveSpeed;
+        player.vX += this.jetpackXSpeed;
         player.vX = Math.min(player.vX, this.maxSpeed);
       }
       if (player.keys.left) {
-        player.vX -= this.airMoveSpeed;
+        player.vX -= this.jetpackXSpeed;
         player.vX = Math.max(player.vX, -this.maxSpeed);
       }
     }
 
     // VERTICAL
 
-    player.vY += this.jetpackSpeed;
+    player.vY += this.jetpackYSpeed;
     player.vY = Math.min(player.vY, this.terminalVelocity);
     player.vY = Math.max(player.vY, this.jetpackMaxSpeed);
     player.y += player.vY;

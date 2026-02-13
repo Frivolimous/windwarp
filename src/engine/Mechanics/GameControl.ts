@@ -101,7 +101,6 @@ export class GameControl {
     this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
 
     this.gameEnvironment.setupLevel(data);
-    this.canvas.resetBounds(data.width, data.height);
     this.canvas.addConfig(data);
 
     this.player.position.set(data.startingPosition.x, data.startingPosition.y);

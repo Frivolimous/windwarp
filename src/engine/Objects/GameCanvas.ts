@@ -30,12 +30,6 @@ export class GameCanvas extends PIXI.Container {
     this.movingLayer.addChild(this.layers[GameCanvas.OBJECTS], this.layers[GameCanvas.PLAYER], this.layers[GameCanvas.EFFECTS]);
     this.staticLayer.addChild(this.layers[GameCanvas.UI]);
 
-    this.background.rect(0, 0, boundWidth * this.backgroundRatio, boundHeight * this.backgroundRatio);
-    this.background.fill(0x3366ff);
-
-    this.background.rect(0, 900, boundWidth, boundHeight - 900);
-    this.background.fill(0x33ff66);
-
     this.eventMode = 'dynamic';
   }
 
@@ -47,17 +41,29 @@ export class GameCanvas extends PIXI.Container {
     // consol
   }
 
-  resetBounds(width: number, height: number) {
+  resetBounds(width: number, height: number, bgColor: number) {
+    bgColor = 0x3366ff;
+    // let baseColor = new ColorObject(0x3366ff);
+    // // bgColor = 0x3366ff;
+    // let color = new ColorObject(bgColor);
+    // let hslBase = baseColor.toHSL();
+    // let hslColor = color.toHSL();
+    // console.log(hslBase, hslColor)
+    // hslBase[0] = hslColor[0] - 15;
+    // color.fromHSL(hslBase);
+
+    // bgColor = color.toNumber();
+
     this.background.clear();
 
     this.background.rect(0, 0, width, height);
-    this.background.fill(0x3366ff);
+    this.background.fill(bgColor);
     
     let area = width * height;
 
     for (let i = 0; i < area; i += 100000) {
       this.background.ellipse(Math.random() * width, Math.random() * height, 50 + Math.random() * 50, 50 + Math.random() * 50);
-      this.background.fill(colorLuminance(0x3366ff,  1.05 + Math.random() * 0.1))
+      this.background.fill(colorLuminance(bgColor,  1.05 + Math.random() * 0.1))
     }
 
     this.boundWidth = width;
@@ -69,6 +75,8 @@ export class GameCanvas extends PIXI.Container {
     this.layers[GameCanvas.OBJECTS].addChild(data.img);
     this.layers[GameCanvas.OBJECTS].addChild(this.foreground);
     this.foreground.clear();
+
+    this.resetBounds(data.width, data.height, data.bgcolor);
 
     let objects = data.blocks;
     objects.forEach(obj => {
