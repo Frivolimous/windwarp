@@ -25,9 +25,7 @@ export class LevelLoader {
   static CHAR_SIZE = 24;
   static DRAW_OUTLINES = false;
 
-  static levelBitmaps: ImageBitmap[] = [];
   static mainTextureSource: PIXI.TextureSource;
-
   static characterTexture: PIXI.TextureSource;
   static skins: PIXI.Texture[][] = [];
 
@@ -164,9 +162,12 @@ export class LevelLoader {
 
   public static makeLevelData(bitmap: ImageBitmap): ILevelData {
     let canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
     let ctx = canvas.getContext('2d');
     ctx.drawImage(bitmap, 0, 0);
     let data = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+
     let m: ILevelData = {
       blocks: [],
       width: bitmap.width * LevelLoader.TILE_SIZE,
