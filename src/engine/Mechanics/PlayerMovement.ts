@@ -94,11 +94,11 @@ export class PlayerMovement {
 
   public updatePlayerActions(player: PlayerSprite) {
     if (player.keys.jetpack) {
-      player.isJetpacking = true;
-      player.isCrouching = false;
+      if (player.actionState === null) {
+        this.startJetpacking(player, 0);
+      }
+    } else if (player.actionState && player.actionState.type === 'jetpacking') {
       player.actionState = null;
-    } else if (player.isJetpacking) {
-      player.isJetpacking = false;
     }
 
     if (player.keys.up) {
@@ -140,14 +140,13 @@ export class PlayerMovement {
         player.isCrouching = true;
       }
     } else {
-      if (player.isCrouching && this.world.checkVertical(player.getCollider(true), player.isGhost).up >= 0) {
+      if (player.actionState) {}
+      else if (player.isCrouching && this.world.checkVertical(player.getCollider(true), player.isGhost).up >= 0) {
         player.isCrouching = false;
       }
     }
 
-    if (player.isJetpacking) {
-      player.vY = Math.max(player.vY + this.jetpackYSpeed, this.jetpackMaxSpeed);
-    } else if (!player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
+    if (!player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
       player.vY = Math.min(player.vY + this.gravity, this.terminalVelocity);
     }
 
@@ -155,7 +154,10 @@ export class PlayerMovement {
     let speed = 0;
     
     if (player.actionState) {
-
+      if (player.actionState.type === 'jetpacking') {
+        speed = this.jetpackXSpeed;
+        friction = this.airFriction;
+      }
     } else if (player.isGrounded) {
       speed = this.moveSpeed;
       friction = this.friction;
@@ -164,9 +166,6 @@ export class PlayerMovement {
       }
     } else if (!player.isGrounded) {
       speed = this.airMoveSpeed;
-      friction = this.airFriction;
-    } else if (player.isJetpacking) {
-      speed = this.jetpackXSpeed;
       friction = this.airFriction;
     }
     if (player.landTime > 0) friction *= this.extraLandFriction;
@@ -190,7 +189,6 @@ export class PlayerMovement {
   }
 
   public canJump(player: PlayerSprite) {
-    if (player.isJetpacking) return false;
     if (player.isCrouching) return false;
     if (player.landTime > 0) return false;
     if (player.holdUp) return false;
@@ -214,15 +212,13 @@ export class PlayerMovement {
     // COLLIDE UP
     if (vCollision.up < 0) {
       if (player.isGrounded) player.isCrouching = true;
-      else if (!player.isGrounded || player.isJetpacking) {
+      else{
         if (player.vY < 0) {
           player.y -= vCollision.up;
           if(this.specialBlockCheck(player, vCollision.upBlock, -1, 0)) {
-
           } else {
-            if (player.isJetpacking) {
-              player.vY = this.bounce * player.vY;
-              player.bounceTime = this.bounceTime;
+            if (player.actionState && player.actionState.onCollisionUp) {
+              player.actionState.onCollisionUp(vCollision);
             } else {
               player.vY = 0;
             }
@@ -235,12 +231,6 @@ export class PlayerMovement {
     if (vCollision.down < 0) {
       if (player.actionState && player.actionState.onCollisionDown) {
         player.actionState.onCollisionDown(vCollision);
-      } else if (player.isJetpacking) {
-        if (player.vY >= 0) {
-          player.y += vCollision.down - player.vY;
-          player.vY = this.bounce * player.vY;
-          player.bounceTime = this.bounceTime;
-        }
       } else if (!player.isGrounded) {
         if (player.vY > 0) {
           if (vCollision.downBlock) {
@@ -262,13 +252,12 @@ export class PlayerMovement {
         }
       }
     } else {
-      if (player.isGrounded) {
+      if (player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
         this.checkIfFall(player, vCollision)
       }
     }
 
     // HORIZONTAL
-
     // UPDATE
     player.x += player.vX;
     
@@ -278,22 +267,24 @@ export class PlayerMovement {
 
     const collideHorizontal = (direction: number, depth: number, block: IGameBlock, topDepth: number, topBlock: IGameBlock) => {
       if (depth < 0) {
-        if (!block || block.type !== 'mud' || block != vCollision.downBlock) {
+        if (!block || block.type !== 'mud' || block != player.stepBlock) {
           player.x += depth * direction;
   
           if(this.specialBlockCheck(player, block, 0, direction)) return;
-  
-          if (!player.actionState && topDepth > 0 && (player.vX === 0 || Math.sign(player.vX) === direction)) {
-            this.startClimbing(player, direction);
-            return;
-          } else if (!player.isGrounded && player.wallGrabsRemaining > 0) {
-            let key = direction < 0 ? player.keys.left : player.keys.right;
-            let oKey = direction < 0 ? player.keys.right : player.keys.left;
 
-            if ((!oKey && Math.sign(player.vX) === direction && Math.abs(player.vX) > this.minGrabSpeedX) ||
-                (key && player.vY < 0 && player.vY > this.maxGrabSpeedY)) {
-              this.startWallGrab(player, direction);
+          if (!player.actionState) {
+            if (topDepth > 0 && (player.vX === 0 || Math.sign(player.vX) === direction)) {
+              this.startClimbing(player, direction);
               return;
+            } else if (!player.isGrounded && player.wallGrabsRemaining > 0) {
+              let key = direction < 0 ? player.keys.left : player.keys.right;
+              let oKey = direction < 0 ? player.keys.right : player.keys.left;
+
+              if ((!oKey && Math.sign(player.vX) === direction && Math.abs(player.vX) > this.minGrabSpeedX) ||
+                  (key && player.vY < 0 && player.vY > this.maxGrabSpeedY)) {
+                this.startWallGrab(player, direction);
+                return;
+              }
             }
           }
 
@@ -444,6 +435,34 @@ export class PlayerMovement {
     player.isGrounded = true;
   }
 
+  startJetpacking(player: PlayerSprite, direction: number) {
+    player.actionState = {
+      type: 'jetpacking',
+      direction,
+      maxTime: Infinity,
+      timeRemaining: Infinity,
+      hasPhysics: false,
+      canJump: false,
+      updateY: () => {
+        player.vY = Math.max(player.vY + this.jetpackYSpeed, this.jetpackMaxSpeed);
+      },
+      onCollisionUp: (vCollision: CollisionResponse) => {
+        player.vY = this.bounce * player.vY;
+        player.bounceTime = this.bounceTime;
+      },
+      onCollisionDown: (vCollision: CollisionResponse) => {
+        if (player.vY >= 0) {
+          player.y += vCollision.down - player.vY;
+          player.vY = this.bounce * player.vY;
+          player.bounceTime = this.bounceTime;
+        }
+      }
+    }
+
+    player.isCrouching = false;
+    player.isGrounded = false;
+  }
+
   startClimbing(player: PlayerSprite, direction: number) {
     player.actionState = {
       type: 'climbing',
@@ -454,10 +473,15 @@ export class PlayerMovement {
       onCollisionLR: (hCollision: CollisionResponse) => {
         if ((player.actionState.direction === -1 && hCollision.left > 0) || (player.actionState.direction === 1 && hCollision.right > 0)) {
           player.isCrouching = true;
+          player.isGrounded = true;
           player.x += this.climbInset * player.actionState.direction;
+          player.y += 10;
           let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
           if (vCollision.down < 0) {
             player.y += vCollision.down;
+          }
+          if (vCollision.up < 0) {
+            player.y -= vCollision.up;
           }
           hCollision = this.world.checkHorizontal(player.getCollider(), player.isGhost);
           if (hCollision.left < 0) player.x -= hCollision.left;

@@ -32,7 +32,7 @@ export class PlayerSprite extends PIXI.Container {
   public actionState: ActionState;
   public isGrounded = false;
   public isCrouching = false;
-  public isJetpacking = false;
+  public isInMud = false;
 
   public vX = 0;
   public vY = 0;
@@ -73,7 +73,8 @@ export class PlayerSprite extends PIXI.Container {
     this.actionState = null;
     this.bounceTime = this.landTime = 0;
     this.vX = this.vY = 0;
-    this.isGrounded = this.isJetpacking = this.isCrouching = false;
+    this.isGrounded = true;
+    this.isCrouching = false;
   }
 
   makeGhost() {
@@ -177,7 +178,7 @@ export class PlayerSprite extends PIXI.Container {
 
     this.updateHands();
 
-    if (this.isJetpacking) {
+    if (this.actionState && this.actionState.type === 'jetpacking') {
       Firework.makeExplosion(Facade.gamePage.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), { count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2 }));
     }
 
@@ -328,13 +329,14 @@ export class PlayerSprite extends PIXI.Container {
           dly = dry = this.climbHeight;
           dlx = drx = this.collider.width * this.actionState.direction;
           break;
+        case 'jetpacking':
+          this.handAnimationSpeed = 0.1;
+          dly = this.collider.height * (-0.4);
+          dry = this.collider.height * (-0.4);
+          dlx = this.collider.width * (-0.6);
+          drx = this.collider.width * (0.6);
+          break;
       }
-    } else if (this.isJetpacking) {
-      this.handAnimationSpeed = 0.1;
-      dly = this.collider.height * (-0.4);
-      dry = this.collider.height * (-0.4);
-      dlx = this.collider.width * (-0.6);
-      drx = this.collider.width * (0.6);
     } else {
       if (this.isGrounded) {
         if (this.vX === 0) {
@@ -431,7 +433,7 @@ export class PlayerSprite extends PIXI.Container {
 export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 
 export interface ActionState {
-  type: 'rolling' | 'wall-grab' | 'climbing' | 'victory';
+  type: 'rolling' | 'wall-grab' | 'climbing' | 'victory' | 'jetpacking';
   direction: number;
   timeRemaining: number;
   maxTime: number;
@@ -441,6 +443,7 @@ export interface ActionState {
   canJump?: boolean;
   hasPhysics?: boolean;
   updateY?: () => void;
+  onCollisionUp?: (vCollision: CollisionResponse) => void;
   onCollisionDown?: (vCollision: CollisionResponse) => void;
   onCollisionLR?: (hCollision: CollisionResponse) => void;
 }
@@ -448,4 +451,3 @@ export interface ActionState {
  // isCrouching
  // isMoving
  // isGrounded
- // isJetpacking
