@@ -47,12 +47,10 @@ export class GameControl {
     this.gameStartText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
 
     this.player = new PlayerSprite();
-    this.playerMovement.setPlayer(this.player);
     this.player.nextSkin(0);
     this.canvas.addPlayer(this.player);
 
     this.player2 = new PlayerSprite();
-    this.playerMovement.setPlayer(this.player2);
     this.player2.nextSkin(3);
     
     GameEvents.SWITCH_ACTIVATED.addListener((block: IGameBlock) => {
@@ -105,12 +103,10 @@ export class GameControl {
 
     this.player.position.set(data.startingPosition.x, data.startingPosition.y);
     this.player.reset();
-    this.player.setMovementState('idle');
     
     if (this.TWO_PLAYER) {
       this.player2.position.set(data.startingPosition.x, data.startingPosition.y);
       this.player2.reset();
-      this.player2.setMovementState('idle');
       this.canvas.addPlayer(this.player2);
     } else {
       this.canvas.removePlayer(this.player2);
@@ -137,7 +133,6 @@ export class GameControl {
         this.ghostPlayer = new PlayerSprite();
         this.ghostPlayer.nextSkin(0);
         this.ghostPlayer.makeGhost();
-        this.playerMovement.setPlayer(this.ghostPlayer);
         this.canvas.layers[GameCanvas.PLAYER].addChildAt(this.ghostPlayer, 0);
     }
   }
@@ -152,7 +147,6 @@ export class GameControl {
 
         this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
         this.ghostPlayer.reset();
-        this.ghostPlayer.setMovementState('idle');
       }
 
       this.recordingStream = new InputStream(this.currentLevelIndex);
@@ -167,7 +161,6 @@ export class GameControl {
 
       this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
       this.ghostPlayer.reset();
-      this.ghostPlayer.setMovementState('idle');
     } else {
       if (this.ghostPlayer) {
         this.canvas.removePlayer(this.ghostPlayer);
