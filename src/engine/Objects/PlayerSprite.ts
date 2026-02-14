@@ -7,6 +7,7 @@ import { GameCanvas } from "./GameCanvas";
 import { JMEasing } from "../../JMGE/JMTween";
 import { LevelLoader } from "../../services/LevelLoader";
 import { BlockColors, IGameBlock } from "./GameBlock";
+import { CollisionResponse } from "./GameEnvironment";
 
 export class PlayerSprite extends PIXI.Container {
   public keys: Record<PlayerKeys, boolean> = {
@@ -26,25 +27,17 @@ export class PlayerSprite extends PIXI.Container {
 
   public wallGrabsRemaining = 1;
 
-  public movementState: MovementState = 'idle';
   public stepBlock: IGameBlock;
 
-  // public inMud = false;
   public actionState: ActionState;
-  public isMoving = false;
   public isGrounded = false;
-  get isCrouching() {
-    return (this.movementState === 'crouching' || this.movementState === 'crawling');
-  }
+  public isCrouching = false;
+  public isJetpacking = false;
 
   public vX = 0;
   public vY = 0;
 
   public bounceTime = 0;
-  public rollTime = 0;
-  public maxRollTime = 100;
-  public grabTime = 0;
-  public maxGrabTime = 10;
   public landTime = 0;
 
   private skewMult = -1.2 / LevelLoader.CHAR_SIZE;
@@ -77,7 +70,10 @@ export class PlayerSprite extends PIXI.Container {
   }
 
   reset() {
-    this.bounceTime = this.rollTime = this.grabTime = this.landTime = 0;
+    this.actionState = null;
+    this.bounceTime = this.landTime = 0;
+    this.vX = this.vY = 0;
+    this.isGrounded = this.isJetpacking = this.isCrouching = false;
   }
 
   makeGhost() {
@@ -125,29 +121,28 @@ export class PlayerSprite extends PIXI.Container {
     this.rightHand.texture = skin[0];
   }
 
-  setMovementState(state: MovementState) {
-    if (state === this.movementState) return;
+  // setMovementState(state: MovementState) {
+  //   if (state === this.movementState) return;
 
-    let tint = 0x888888;
-    if (this.stepBlock) {
-      tint = BlockColors[this.stepBlock.type];
-    }
+  //   let tint = 0x888888;
+  //   if (this.stepBlock) {
+  //     tint = BlockColors[this.stepBlock.type];
+  //   }
 
-    if (state === 'ascending') {
-      if (this.movementState !== 'jetpacking') {
-        Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
-      }
-    } else if ((this.movementState === 'falling' || this.movementState === 'diving') && state === 'walking') {
-      Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
-    }
-    this.movementState = state;
-    // this.movementStateData = MovementStateDataRecord[state];
-    GameEvents.ACTIVITY_LOG.publish({ slug: 'PLAYER_STATE', text: state });
-  }
+  //   if (state === 'ascending') {
+  //     if (!this.isJetpacking) {
+  //       Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
+  //     }
+  //   } else if (this.movementState === 'falling' && state === 'walking') {
+  //     Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
+  //   }
+  //   this.movementState = state;
+  //   // this.movementStateData = MovementStateDataRecord[state];
+  //   GameEvents.ACTIVITY_LOG.publish({ slug: 'PLAYER_STATE', text: state });
+  // }
 
-  public getCollider(state?: MovementState) {
-    state = state || this.movementState;
-    if (state === 'crouching' || state === 'crawling' || state === 'rolling' || state === 'climbing-left' || state === 'climbing-right') {
+  public getCollider(forceFullSize = false) {
+    if (this.isCrouching && !forceFullSize) {
       return new PIXI.Rectangle(this.x + this.collider.x, this.y + this.collider.y + this.collider.height / 2, this.collider.width, this.collider.height / 2);
     }
     return new PIXI.Rectangle(this.x + this.collider.x, this.y + this.collider.y, this.collider.width, this.collider.height);
@@ -160,7 +155,7 @@ export class PlayerSprite extends PIXI.Container {
   updateView() {
     if (this.vX > 0) this.head.scale.x = Math.abs(this.head.scale.x);
     if (this.vX < 0) this.head.scale.x = -Math.abs(this.head.scale.x);
-    if (this.movementState === 'victory') {
+    if (this.actionState && this.actionState.type === 'victory') {
       this.updateVictoryAnimation();
       return;
     }
@@ -168,7 +163,7 @@ export class PlayerSprite extends PIXI.Container {
     this.stepDelay--;
     if (this.stepDelay <= 0) {
       this.stepDelay = this.maxStepDelay;
-      if (this.movementState === 'walking' || this.movementState === 'rolling') {
+      if (this.isGrounded && this.vX != 0) {
         let tint = 0x888888;
         if (this.stepBlock) {
           tint = BlockColors[this.stepBlock.type];
@@ -182,49 +177,49 @@ export class PlayerSprite extends PIXI.Container {
 
     this.updateHands();
 
-    if (this.movementState === 'jetpacking') {
+    if (this.isJetpacking) {
       Firework.makeExplosion(Facade.gamePage.canvas.layers[GameCanvas.OBJECTS], _.defaults(this.getMidPoint(), { count: 1, tint: 0xffcc66, mag_min: 1, mag_max: 2 }));
     }
 
-    if (this.movementState === 'wall-grab-left' || this.movementState === 'wall-grab-right') {
-      this.body.skew.x = 0;
-      this.body.x = 0;
-      this.body.scale.y = 0.8;
-      this.head.y = 0;
-      this.body.scale.x = 1.1;
-      this.body.y = -this.body.height * 0.4;
-      return;
-    }
+    if (this.actionState) {
+      if (this.actionState.type === 'wall-grab') {
+        this.body.skew.x = 0;
+        this.body.x = 0;
+        this.body.scale.y = 0.8;
+        this.head.y = 0;
+        this.body.scale.x = 1.1;
+        this.body.y = -this.body.height * 0.4;
+        return;
+      } else if (this.actionState.type === 'rolling') {
+        this.body.skew.x = 0;
+        // this.body.scale.y = 0.5;
+        let scale = this.body.scale.y;
+        let dScale = 0.5 - scale;
+        scale = scale + dScale * this.animationSpeed;
+        this.body.scale.y = scale;
+        // this.head.scale.y = scale;
 
-    if (this.movementState === 'rolling') {
-      this.body.skew.x = 0;
-      // this.body.scale.y = 0.5;
-      let scale = this.body.scale.y;
-      let dScale = 0.5 - scale;
-      scale = scale + dScale * this.animationSpeed;
-      this.body.scale.y = scale;
-      // this.head.scale.y = scale;
+        let angle = (this.actionState.timeRemaining / this.actionState.maxTime) * Math.PI * 2 * Math.sign(-this.vX);
+        this.body.rotation = angle;
+        this.head.rotation = angle;
 
-      let angle = (this.rollTime / this.maxRollTime) * Math.PI * 2 * Math.sign(-this.vX);
-      this.body.rotation = angle;
-      this.head.rotation = angle;
+        let pivot = new PIXI.Point(0, -this.collider.height * (scale * 0.5 + 0.08));
+        let pivotH = new PIXI.Point(0, -(this.collider.height * (0.6)));
 
-      let pivot = new PIXI.Point(0, -this.collider.height * (scale * 0.5 + 0.08));
-      let pivotH = new PIXI.Point(0, -(this.collider.height * (0.6)));
+        let offY = this.collider.height * (-0.05);
+        let offYH = this.collider.height * (0.2 - 0.5 * (scale - 0.5));
 
-      let offY = this.collider.height * (-0.05);
-      let offYH = this.collider.height * (0.2 - 0.5 * (scale - 0.5));
+        let dpX = Math.cos(angle) * pivot.x - Math.sin(angle) * pivot.y - pivot.x;
+        let dpY = Math.sin(angle) * pivot.x + Math.cos(angle) * pivot.y - pivot.y;
+        let dpXH = Math.cos(angle) * pivotH.x - Math.sin(angle) * pivotH.y - pivotH.x;
+        let dpYH = Math.sin(angle) * pivotH.x + Math.cos(angle) * pivotH.y - pivotH.y;
+        this.body.x = -dpX;
+        this.body.y = -dpY + offY;
+        this.head.x = -dpXH;
+        this.head.y = -dpYH + offYH;
 
-      let dpX = Math.cos(angle) * pivot.x - Math.sin(angle) * pivot.y - pivot.x;
-      let dpY = Math.sin(angle) * pivot.x + Math.cos(angle) * pivot.y - pivot.y;
-      let dpXH = Math.cos(angle) * pivotH.x - Math.sin(angle) * pivotH.y - pivotH.x;
-      let dpYH = Math.sin(angle) * pivotH.x + Math.cos(angle) * pivotH.y - pivotH.y;
-      this.body.x = -dpX;
-      this.body.y = -dpY + offY;
-      this.head.x = -dpXH;
-      this.head.y = -dpYH + offYH;
-
-      return;
+        return;
+      }
     }
 
     this.body.rotation = 0;
@@ -236,14 +231,14 @@ export class PlayerSprite extends PIXI.Container {
 
     let desiredSkew = this.vX * this.skewMult;
     let desiredVStretch = 1;
-    if (this.movementState === 'crawling') desiredSkew *= 4;
+    if (this.isCrouching) desiredSkew *= 4;
 
     desiredVStretch = 1 + Math.min(Math.abs(this.vY) * this.vStretchMult, this.maxVStretch);
-    if (this.movementState === 'crouching' || this.movementState === 'crawling' || this.movementState === 'climbing-left' || this.movementState === 'climbing-right') {
+    if (this.isCrouching || (this.actionState && this.actionState.type === 'climbing')) {
       desiredVStretch *= 0.5;
     }
 
-    if (this.movementState === 'idle') {
+    if (this.vX === 0) {
       let percent = this.handsTick / this.handsTime;
       percent = (Math.abs(percent * 2 - 1));
       desiredVStretch += -0.02 + percent * 0.04;
@@ -312,115 +307,114 @@ export class PlayerSprite extends PIXI.Container {
     let drx = 0;
     let dry = 0;
 
-    switch(this.movementState) {
-      case 'idle':
-        this.handAnimationSpeed = 0.2;
-        //BREATHE
-        let iPercent = this.handsTick / this.handsTime;
-        let ia = (Math.abs(iPercent * 2 - 1));
+    if (this.actionState) {
+      let percent = this.actionState.timeRemaining / this.actionState.maxTime;
 
-        dly = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
-        dry = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
-        dlx = this.collider.width * (-0.7 - 0.03 * (1-ia));
-        drx = this.collider.width * (0.7 + 0.03 * (1-ia));
-
-        //DANCE
-        // let a = this.handsTick / this.handsTime * Math.PI * 2;
-        // let m = this.collider.width * 0.2;
-        // dlx = -this.collider.width * 0.6 + Math.cos(a) * m;
-        // dly = -this.collider.height * 0.4 + Math.sin(a) * m;
-        // drx = this.collider.width * 0.6 - Math.cos(a + Math.PI) * m;
-        // dry = -this.collider.height * 0.4 + Math.sin(a + Math.PI) * m;
-        break;
-      case 'walking':
-        this.handAnimationSpeed = 1;
-        // SWING
-        let percentW = this.handsTick / this.handsTime;
-
-        let a1 = (Math.abs(percentW * 2 - 1));
-        let a2 = 1 - (Math.abs(percentW * 2 - 1));
-
-        let a3 = JMEasing.Sinusoidal.Out(a1);
-        let a4 = JMEasing.Sinusoidal.Out(a2);
-
-        a1 = (a1 * Math.PI * 1.2 - Math.PI * 0.5) * Math.sign(this.vX);
-        a2 = (a2 * Math.PI * 1.2 - Math.PI * 0.5) * Math.sign(this.vX);
-        let m1 = 8 - a3 * 3;
-        let m2 = 8 - a4 * 3;
-        dly = -this.collider.height * 0.5 + Math.cos(a1) * m1;
-        dlx = -this.collider.width * 0.2 + Math.sin(a1) * m1;
-        dry = -this.collider.height * 0.5 + Math.cos(a2) * m2;
-        drx = this.collider.width * 0.2 + Math.sin(a2) * m2;
-
-        // // NARUTO
-        // if (this.vX < 0) {
-        //   let amt = Math.max(this.vX, -2);
-        //   dly = this.collider.height * (-0.4 - amt * 0.008);
-        //   dry = this.collider.height * (-0.4 - amt * 0.02);
-        //   dlx = this.collider.width * (-0.6 - amt * 1);
-        //   drx = this.collider.width * (0.6 - amt * 0.6);
-        // } else {
-        //   let amt = Math.min(this.vX, 2);
-        //   dly = this.collider.height * (-0.4 + amt * 0.02);
-        //   dry = this.collider.height * (-0.4 + amt * 0.008);
-        //   dlx = this.collider.width * (-0.6 - amt * 0.6);
-        //   drx = this.collider.width * (0.6 - amt * 1);
-        // }
-        break;
-      case 'ascending': case 'falling':
+      switch(this.actionState.type) {
+        case 'rolling':
+          this.handAnimationSpeed = 0.2;
+          let percentR = 1 - percent;
+          dly = dry = this.collider.height * -0.1;
+          dlx = drx = this.collider.width * (Math.sign(this.vX) * (2 - percentR * 4));
+          break;
+        case 'wall-grab':          
+          this.handAnimationSpeed = 0.5;
+          dly = this.collider.height * (-1 + 0.1 * this.actionState.direction + percent * 0.3);
+          dry = this.collider.height * (-1 - 0.1 * this.actionState.direction + percent * 0.3);
+          dlx = drx = this.collider.width * this.actionState.direction;
+          break;
+        case 'climbing':
+          this.handAnimationSpeed = 0.2;
+          dly = dry = this.climbHeight;
+          dlx = drx = this.collider.width * this.actionState.direction;
+          break;
+      }
+    } else if (this.isJetpacking) {
+      this.handAnimationSpeed = 0.1;
+      dly = this.collider.height * (-0.4);
+      dry = this.collider.height * (-0.4);
+      dlx = this.collider.width * (-0.6);
+      drx = this.collider.width * (0.6);
+    } else {
+      if (this.isGrounded) {
+        if (this.vX === 0) {
+          if (this.isCrouching) {
+            this.handAnimationSpeed = 0.2;
+            dly = this.collider.height * (-0.1);
+            dry = this.collider.height * (-0.1);
+            dlx = this.collider.width * (-0.6);
+            drx = this.collider.width * (0.6);
+          } else {
+            this.handAnimationSpeed = 0.2;
+            //BREATHE
+            let iPercent = this.handsTick / this.handsTime;
+            let ia = (Math.abs(iPercent * 2 - 1));
+  
+            dly = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
+            dry = this.collider.height * (-0.4 +0.02 - 0.04 * ia);
+            dlx = this.collider.width * (-0.7 - 0.03 * (1-ia));
+            drx = this.collider.width * (0.7 + 0.03 * (1-ia));
+  
+            //DANCE
+            // let a = this.handsTick / this.handsTime * Math.PI * 2;
+            // let m = this.collider.width * 0.2;
+            // dlx = -this.collider.width * 0.6 + Math.cos(a) * m;
+            // dly = -this.collider.height * 0.4 + Math.sin(a) * m;
+            // drx = this.collider.width * 0.6 - Math.cos(a + Math.PI) * m;
+            // dry = -this.collider.height * 0.4 + Math.sin(a + Math.PI) * m;
+          }
+        } else {
+          if (this.isCrouching) {
+            this.handAnimationSpeed = 0.2;
+            let percent = this.handsTick / this.handsTime;
+            let ll = 1 - Math.abs(Math.min(percent,0.5) * 4 - 1)
+            let rr = 1 - Math.abs(Math.max(percent,0.5) * 4 - 3)
+            dly = this.collider.height * (-0.1 - (this.vX > 0 ? ll : rr) * 0.3);
+            dry = this.collider.height * (-0.1 - (this.vX > 0 ? rr : ll) * 0.3);
+            dlx = this.collider.width * (1.5 * (1 - Math.abs(percent * 4 - 2)));
+            drx = this.collider.width * (1.5 * (Math.abs(percent * 4 - 2) - 1));
+          } else {
+            this.handAnimationSpeed = 1;
+            // SWING
+            let percentW = this.handsTick / this.handsTime;
+  
+            let a1 = (Math.abs(percentW * 2 - 1));
+            let a2 = 1 - (Math.abs(percentW * 2 - 1));
+  
+            let a3 = JMEasing.Sinusoidal.Out(a1);
+            let a4 = JMEasing.Sinusoidal.Out(a2);
+  
+            a1 = (a1 * Math.PI * 1.2 - Math.PI * 0.5) * Math.sign(this.vX);
+            a2 = (a2 * Math.PI * 1.2 - Math.PI * 0.5) * Math.sign(this.vX);
+            let m1 = 8 - a3 * 3;
+            let m2 = 8 - a4 * 3;
+            dly = -this.collider.height * 0.5 + Math.cos(a1) * m1;
+            dlx = -this.collider.width * 0.2 + Math.sin(a1) * m1;
+            dry = -this.collider.height * 0.5 + Math.cos(a2) * m2;
+            drx = this.collider.width * 0.2 + Math.sin(a2) * m2;
+  
+            // // NARUTO
+            // if (this.vX < 0) {
+            //   let amt = Math.max(this.vX, -2);
+            //   dly = this.collider.height * (-0.4 - amt * 0.008);
+            //   dry = this.collider.height * (-0.4 - amt * 0.02);
+            //   dlx = this.collider.width * (-0.6 - amt * 1);
+            //   drx = this.collider.width * (0.6 - amt * 0.6);
+            // } else {
+            //   let amt = Math.min(this.vX, 2);
+            //   dly = this.collider.height * (-0.4 + amt * 0.02);
+            //   dry = this.collider.height * (-0.4 + amt * 0.008);
+            //   dlx = this.collider.width * (-0.6 - amt * 0.6);
+            //   drx = this.collider.width * (0.6 - amt * 1);
+            // }
+          }
+        }
+      } else {
         this.handAnimationSpeed = 0.05;
         dly = dry = this.collider.height * (-1 - _.clamp(this.vY, -5, 5) * 0.1);
         dlx = this.collider.width * (-0.6 + this.vX * 0.12);
         drx = this.collider.width * (0.6 + this.vX / this.collider.width * 1.56);
-        break;
-      case 'crouching':
-        this.handAnimationSpeed = 0.2;
-        dly = this.collider.height * (-0.1);
-        dry = this.collider.height * (-0.1);
-        dlx = this.collider.width * (-0.6);
-        drx = this.collider.width * (0.6);
-        break;
-      case 'crawling':
-        this.handAnimationSpeed = 0.2;
-        let percent = this.handsTick / this.handsTime;
-        let ll = 1 - Math.abs(Math.min(percent,0.5) * 4 - 1)
-        let rr = 1 - Math.abs(Math.max(percent,0.5) * 4 - 3)
-        dly = this.collider.height * (-0.1 - (this.vX > 0 ? ll : rr) * 0.3);
-        dry = this.collider.height * (-0.1 - (this.vX > 0 ? rr : ll) * 0.3);
-        dlx = this.collider.width * (1.5 * (1 - Math.abs(percent * 4 - 2)));
-        drx = this.collider.width * (1.5 * (Math.abs(percent * 4 - 2) - 1));
-        break;
-      case 'rolling':
-        this.handAnimationSpeed = 0.1;
-        let percentR = 1 - this.rollTime / this.maxRollTime;
-        dly = dry = this.collider.height * -0.1;
-        dlx = drx = this.collider.width * (Math.sign(this.vX) * (2 - percentR * 4));
-        break;
-      case 'climbing-left': case 'climbing-right':
-        this.handAnimationSpeed = 0.2;
-        dly = dry = this.climbHeight;
-        dlx = drx = this.collider.width * ((this.movementState === 'climbing-left' ? -1 : 1) * 1);
-        break;
-      case 'wall-grab-left':
-        this.handAnimationSpeed = 0.5;
-        dly = this.collider.height * (-1.1 + this.grabTime / this.maxGrabTime * 0.3);
-        dry = this.collider.height * (-1 + this.grabTime / this.maxGrabTime * 0.3);
-        dlx = drx = this.collider.width * -1;
-        break;
-      case 'wall-grab-right':
-        this.handAnimationSpeed = 0.5;
-        dly = this.collider.height * (-1 + this.grabTime / this.maxGrabTime * 0.3);
-        dry = this.collider.height * (-1.1 + this.grabTime / this.maxGrabTime * 0.3);
-        dlx = drx = this.collider.width * 1;
-        break;
-      case 'jetpacking': case 'diving':
-      default:
-        this.handAnimationSpeed = 0.1;
-        dly = this.collider.height * (-0.4);
-        dry = this.collider.height * (-0.4);
-        dlx = this.collider.width * (-0.6);
-        drx = this.collider.width * (0.6);
-        break;
+      }
     }
 
     this.setChildIndex(this.rightHand, this.vX <= 0 ? 3 : 0);
@@ -434,16 +428,21 @@ export class PlayerSprite extends PIXI.Container {
   }
 }
 
-export type MovementState = 'idle' | 'walking' | 'ascending' | 'falling' | 'diving' | 'crouching' | 'crawling' | 'rolling' |
-  'wall-grab-left' | 'wall-grab-right' | 'climbing-left' | 'climbing-right' | 'jetpacking' | 'victory';
-
 export type PlayerKeys = 'down' | 'up' | 'left' | 'right' | 'jetpack' | 'dash';
 
 export interface ActionState {
-  slug: 'diving' | 'rolling' | 'wall-grab' | 'climbing' | 'victory';
-  direction: -1 | 1;
+  type: 'rolling' | 'wall-grab' | 'climbing' | 'victory';
+  direction: number;
   timeRemaining: number;
   maxTime: number;
+  onExpire?: () => void;
+  onJump?: () => void;
+  onDown?: () => void;
+  canJump?: boolean;
+  hasPhysics?: boolean;
+  updateY?: () => void;
+  onCollisionDown?: (vCollision: CollisionResponse) => void;
+  onCollisionLR?: (hCollision: CollisionResponse) => void;
 }
 
  // isCrouching
