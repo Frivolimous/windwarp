@@ -169,22 +169,24 @@ export class LevelLoader {
     let data = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
 
     let m: ILevelData = {
-      blocks: [],
+      tiles: undefined,
+      objects: [],
+      startingPosition: undefined,
       width: bitmap.width * LevelLoader.TILE_SIZE,
       height: bitmap.height * LevelLoader.TILE_SIZE,
       img: new Tilemap(this.mainTextureSource),
     };
     
-    let typeMap: GameBlockType[][] = [];
+    let tiles: GameBlockType[][] = [];
 
     function matchTypeAt(type: GameBlockType, x: number, y: number) {
       if (y < 0 || x < 0 || (y >= bitmap.height) || (x >= bitmap.width)) return false;  
-      return typeMap[x][y] === type;
+      return tiles[x][y] === type;
     }
 
     for (let x = 0; x < bitmap.width; x++) {
       let row: GameBlockType[] = [];
-      typeMap.push(row);
+      tiles.push(row);
       for (let y = 0; y < bitmap.height; y++) {
         let index = (y * bitmap.width + x) * 4;
         let type = this.getTypeFromColor(data[index], data[index + 1], data[index + 2]);
@@ -192,19 +194,24 @@ export class LevelLoader {
       }
     }
 
+    m.tiles = tiles;
+
     for (let x = 0; x < bitmap.width; x++) {
       for (let y = 0; y < bitmap.height; y++) {
-        let type = typeMap[x][y];
+        let type = tiles[x][y];
         if (type === 'player') {
           m.startingPosition = {x: x * LevelLoader.TILE_SIZE, y: y * LevelLoader.TILE_SIZE};
+          tiles[x][y] = undefined;
         } else if (type) {
-          m.blocks.push({
-            x: x * LevelLoader.TILE_SIZE,
-            y: y * LevelLoader.TILE_SIZE,
-            width: LevelLoader.TILE_SIZE,
-            height: LevelLoader.TILE_SIZE,
-            type: type,
-          });
+          if (type === 'exploding') {
+            m.objects.push({
+              x: x * LevelLoader.TILE_SIZE,
+              y: y * LevelLoader.TILE_SIZE,
+              width: LevelLoader.TILE_SIZE,
+              height: LevelLoader.TILE_SIZE,
+              type: type,
+            });
+          }
 
           if (type !== 'exploding') {
             let tl = [matchTypeAt(type, x, y-1),matchTypeAt(type, x-1, y),matchTypeAt(type, x-1, y-1)];
@@ -221,28 +228,28 @@ export class LevelLoader {
       }
     }
 
-    // merge blocks horizontally
-    for (let i = 0; i < m.blocks.length; i++) {
+    // merge objects horizontally
+    for (let i = 0; i < m.objects.length; i++) {
       let foundBlock: IGameBlock;
       do {
-        let block = m.blocks[i];
-        foundBlock = m.blocks.find(b => b.y === block.y && b.x === block.x + block.width && b.type === block.type);
+        let block = m.objects[i];
+        foundBlock = m.objects.find(b => b.y === block.y && b.x === block.x + block.width && b.type === block.type);
         if (foundBlock) {
           block.width += foundBlock.width;
-          m.blocks = m.blocks.filter(b => b !== foundBlock);
+          m.objects = m.objects.filter(b => b !== foundBlock);
         }
       } while(foundBlock);
     }
 
-    // merge blocks vertically
-    for (let i = 0; i < m.blocks.length; i++) {
+    // merge objects vertically
+    for (let i = 0; i < m.objects.length; i++) {
       let foundBlock: IGameBlock;
       do {
-        let block = m.blocks[i];
-        foundBlock = m.blocks.find(b => b.x === block.x && b.y === block.y + block.height && block.width === b.width && b.type === block.type);
+        let block = m.objects[i];
+        foundBlock = m.objects.find(b => b.x === block.x && b.y === block.y + block.height && block.width === b.width && b.type === block.type);
         if (foundBlock) {
           block.height += foundBlock.height;
-          m.blocks = m.blocks.filter(b => b !== foundBlock);
+          m.objects = m.objects.filter(b => b !== foundBlock);
         }
       } while(foundBlock);
     }
@@ -262,10 +269,11 @@ export class LevelLoader {
 }
 
 export interface ILevelData {
-  blocks: IGameBlock[];
+  tiles: GameBlockType[][];
+  objects: IGameBlock[];
   width: number;
   height: number;
-  startingPosition?: {x: number, y: number};
+  startingPosition: {x: number, y: number};
   img: Tilemap;
   bgcolor?: number;
 }

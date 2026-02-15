@@ -15,13 +15,14 @@ Menu
 Map Editor / Bitmap Editor
 background colors
 
-Collision Detection: 
-Use grid not objects
+Collision Detection:
 bitmask the grid?
 Handle faster than 0.5 Tile Size (Swept Movement)
 
 Movement Systems:
 - Coyote Time
+  - ledges
+  - wall jump release
 - Ledge Forgiveness
 - Dash Button?
 - Generally refactor / combine
@@ -35,4 +36,7 @@ Tiles:
 - switches
 - lava
 - speed boost
+- mud - - get it working again
+
+Player: Fix up vfx
 

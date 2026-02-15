@@ -78,7 +78,7 @@ export class GameCanvas extends PIXI.Container {
 
     this.resetBounds(data.width, data.height, data.bgcolor);
 
-    let objects = data.blocks;
+    let objects = data.objects;
     objects.forEach(obj => {
       if (obj.type === 'exploding') {
         let block = new GameBlock(obj);

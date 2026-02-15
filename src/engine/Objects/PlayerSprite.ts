@@ -6,8 +6,8 @@ import { Facade } from "../../main";
 import { GameCanvas } from "./GameCanvas";
 import { JMEasing } from "../../JMGE/JMTween";
 import { LevelLoader } from "../../services/LevelLoader";
-import { BlockColors, IGameBlock } from "./GameBlock";
-import { CollisionResponse } from "./GameEnvironment";
+import { BlockColors, GameBlockType } from "./GameBlock";
+import { ColliionResponse } from "./GameEnvironment";
 
 export class PlayerSprite extends PIXI.Container {
   public keys: Record<PlayerKeys, boolean> = {
@@ -27,7 +27,7 @@ export class PlayerSprite extends PIXI.Container {
 
   public wallGrabsRemaining = 1;
 
-  public stepBlock: IGameBlock;
+  public stepBlock: GameBlockType;
 
   public actionState: ActionState;
   public isGrounded = false;
@@ -51,7 +51,6 @@ export class PlayerSprite extends PIXI.Container {
 
   private handsTick = 0;
   private handsTime = 40;
-  public climbHeight = 0;
 
   public head: PIXI.Sprite;
   public body: PIXI.Sprite;
@@ -142,15 +141,30 @@ export class PlayerSprite extends PIXI.Container {
   //   GameEvents.ACTIVITY_LOG.publish({ slug: 'PLAYER_STATE', text: state });
   // }
 
-  public getCollider(forceFullSize = false) {
+  public getCollider(forceFullSize = false): PlayerCollider {
     if (this.isCrouching && !forceFullSize) {
-      return new PIXI.Rectangle(this.x + this.collider.x, this.y + this.collider.y + this.collider.height / 2, this.collider.width, this.collider.height / 2);
+      return {
+        left: this.x + this.collider.x,
+        top: this.y + this.collider.y + this.collider.height / 2,
+        right: this.x + this.collider.x + this.collider.width,
+        bottom: this.y + this.collider.y + this.collider.height,
+      };
     }
-    return new PIXI.Rectangle(this.x + this.collider.x, this.y + this.collider.y, this.collider.width, this.collider.height);
+    return {
+      left: this.x + this.collider.x,
+      top: this.y + this.collider.y,
+      right: this.x + this.collider.x + this.collider.width,
+      bottom: this.y + this.collider.y + this.collider.height,
+    };
   }
 
-  public getTopCollider() {
-    return new PIXI.Rectangle(this.x + this.collider.x, this.y + this.collider.y, this.collider.width, this.collider.height / 4);
+  public getTopCollider(): PlayerCollider {
+    return {
+      left: this.x + this.collider.x,
+      top: this.y + this.collider.y,
+      right: this.x + this.collider.x + this.collider.width,
+      bottom: this.y + this.collider.y + this.collider.height / 4,
+    };
   }
 
   updateView() {
@@ -167,7 +181,7 @@ export class PlayerSprite extends PIXI.Container {
       if (this.isGrounded && this.vX != 0) {
         let tint = 0x888888;
         if (this.stepBlock) {
-          tint = BlockColors[this.stepBlock.type];
+          tint = BlockColors[this.stepBlock];
         }
         
         Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 2, tint, 
@@ -193,12 +207,10 @@ export class PlayerSprite extends PIXI.Container {
         return;
       } else if (this.actionState.type === 'rolling') {
         this.body.skew.x = 0;
-        // this.body.scale.y = 0.5;
         let scale = this.body.scale.y;
         let dScale = 0.5 - scale;
         scale = scale + dScale * this.animationSpeed;
         this.body.scale.y = scale;
-        // this.head.scale.y = scale;
 
         let angle = (this.actionState.timeRemaining / this.actionState.maxTime) * Math.PI * 2 * Math.sign(-this.vX);
         this.body.rotation = angle;
@@ -326,7 +338,9 @@ export class PlayerSprite extends PIXI.Container {
           break;
         case 'climbing':
           this.handAnimationSpeed = 0.2;
-          dly = dry = this.climbHeight;
+          let climbHeight = Math.round((this.y - this.height / 2) / LevelLoader.TILE_SIZE) * LevelLoader.TILE_SIZE - this.y + 5;
+
+          dly = dry = climbHeight;
           dlx = drx = this.collider.width * this.actionState.direction;
           break;
         case 'jetpacking':
@@ -443,11 +457,18 @@ export interface ActionState {
   canJump?: boolean;
   hasPhysics?: boolean;
   updateY?: () => void;
-  onCollisionUp?: (vCollision: CollisionResponse) => void;
-  onCollisionDown?: (vCollision: CollisionResponse) => void;
-  onCollisionLR?: (hCollision: CollisionResponse) => void;
+  onCollisionUp?: (upCollision: ColliionResponse) => void;
+  onCollisionDown?: (downCollision: ColliionResponse) => void;
+  onCollisionLR?: () => void;
 }
 
  // isCrouching
  // isMoving
  // isGrounded
+
+ export interface PlayerCollider {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+ }

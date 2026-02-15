@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import { GameEvents } from "../../services/GameEvents";
-import { GameEnvironment, CollisionResponse } from "../Objects/GameEnvironment";
+import { GameEnvironment, ColliionResponse } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
-import { IGameBlock } from '../Objects/GameBlock';
+import { LevelLoader } from '../../services/LevelLoader';
 
 export class PlayerMovement {
   private moveSpeed = 1.2;
@@ -57,9 +57,9 @@ export class PlayerMovement {
   }
 
   public respawn(player: PlayerSprite) {
-    let lastCheckpoint = this.world.objects.filter(obj => obj.type === 'checkpoint' && obj.x < player.x).sort((a, b) => b.x - a.x)[0];
+    let lastCheckpoint = this.world.getRightmostTile(player.x, 'checkpoint');
     if (lastCheckpoint) {
-      player.x = lastCheckpoint.x + lastCheckpoint.width / 2;
+      player.x = lastCheckpoint.x + LevelLoader.TILE_SIZE / 2;
       player.y = lastCheckpoint.y;
       player.actionState = null;
       player.vX = 0;
@@ -106,13 +106,13 @@ export class PlayerMovement {
         if (!player.isGrounded && !player.actionState) player.doubleJumpsRemaining--;
         player?.actionState?.onJump?.();
 
-        let tvc = this.world.checkVertical(player.getCollider(), player.isGhost);
-        if (tvc.down < this.minMudJumpStop && tvc.downBlock && tvc.downBlock.type === 'mud') {
-          let percent = tvc.down / this.mudMaxSink;
-          player.vY = this.mudJumpSpeedMin + percent * this.mudJumpSpeedMult;
-        } else {
+        // let tdc = this.world.checkBottom(player.getCollider(), player.isGhost);
+        // if (tdc < this.minMudJumpStop && tvc.downBlock && tvc.downBlock.type === 'mud') {
+        //   let percent = tvc.down / this.mudMaxSink;
+        //   player.vY = this.mudJumpSpeedMin + percent * this.mudJumpSpeedMult;
+        // } else {
           player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
-        }
+        // }
 
         player.isGrounded = false;
         player.isCrouching = false;
@@ -141,7 +141,7 @@ export class PlayerMovement {
       }
     } else {
       if (player.actionState) {}
-      else if (player.isCrouching && this.world.checkVertical(player.getCollider(true), player.isGhost).up >= 0) {
+      else if (player.isCrouching && !this.world.checkTop(player.getCollider(true), player.isGhost)) {
         player.isCrouching = false;
       }
     }
@@ -207,53 +207,57 @@ export class PlayerMovement {
     player.actionState?.updateY?.();
 
     // COLLIDE
-    let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
-    
-    // COLLIDE UP
-    if (vCollision.up < 0) {
-      if (player.isGrounded) player.isCrouching = true;
-      else{
-        if (player.vY < 0) {
-          player.y -= vCollision.up;
-          if(this.specialBlockCheck(player, vCollision.upBlock, -1, 0)) {
-          } else {
-            if (player.actionState && player.actionState.onCollisionUp) {
-              player.actionState.onCollisionUp(vCollision);
+    if (player.vY < 0) {
+      // COLLIDE UP
+      let upCollision = this.world.checkTop(player.getCollider(), player.isGhost);
+      
+      if (upCollision) {
+        if (player.isGrounded) player.isCrouching = true;
+        else{
+          if (player.vY < 0) {
+            player.y += upCollision.depth;
+            if(this.specialBlockCheck(player, upCollision, 0, -1)) {
             } else {
-              player.vY = 0;
-            }
-          }
-        }
-      }
-    }
-
-    // COLLIDE DOWN
-    if (vCollision.down < 0) {
-      if (player.actionState && player.actionState.onCollisionDown) {
-        player.actionState.onCollisionDown(vCollision);
-      } else if (!player.isGrounded) {
-        if (player.vY > 0) {
-          if (vCollision.downBlock) {
-            player.isGrounded = true;
-            player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
-            player.doubleJumpsRemaining = this.maxDoubleJumps;
-            player.wallGrabsRemaining = this.maxWallGrabs;
-
-            player.stepBlock = vCollision.downBlock;
-  
-            player.y += vCollision.down;
-            player.vY = 0;
-          } else {
-            if (vCollision.down < -player.height) {
-              this.respawn(player);
-              return;
+              if (player.actionState && player.actionState.onCollisionUp) {
+                player.actionState.onCollisionUp(upCollision);
+              } else {
+                player.vY = 0;
+              }
             }
           }
         }
       }
     } else {
+      // COLLIDE DOWN
+      let downCollision = this.world.checkBottom(player.getCollider(), player.isGhost);
+      
+      if (downCollision) {
+        if (player.actionState && player.actionState.onCollisionDown) {
+          player.actionState.onCollisionDown(downCollision);
+        } else if (!player.isGrounded) {
+          if (player.vY > 0) {
+            if (downCollision.type) {
+              player.isGrounded = true;
+              player.landTime = this.landTimeBase + Math.abs(player.vY) * this.landTimeVMult;
+              player.doubleJumpsRemaining = this.maxDoubleJumps;
+              player.wallGrabsRemaining = this.maxWallGrabs;
+  
+              player.stepBlock = downCollision.type;
+    
+              player.y -= downCollision.depth;
+              player.vY = 0;
+            } else {
+              if (downCollision.depth < -player.height) {
+                this.respawn(player);
+                return;
+              }
+            }
+          }
+        }
+      }
+
       if (player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
-        this.checkIfFall(player, vCollision)
+        this.checkIfFall(player, downCollision);
       }
     }
 
@@ -262,106 +266,101 @@ export class PlayerMovement {
     player.x += player.vX;
     
     // COLLIDE
-    let hCollision = this.world.checkHorizontal(player.getCollider(), player.isGhost);
-    let hTopCollision = this.world.checkHorizontal(player.getTopCollider(), player.isGhost);
+    if (player.actionState && player.actionState.onCollisionLR) {
+      player.actionState.onCollisionLR();
+    } else {
+      let direction = Math.sign(player.vX);
+      let lrCollision = this.world.checkLR(player.getCollider(), player.isGhost, direction);
+      
+      if (lrCollision && lrCollision.depth > 0) {
+        player.x -= lrCollision.depth * direction;
 
-    const collideHorizontal = (direction: number, depth: number, block: IGameBlock, topDepth: number, topBlock: IGameBlock) => {
-      if (depth < 0) {
-        if (!block || block.type !== 'mud' || block != player.stepBlock) {
-          player.x += depth * direction;
-  
-          if(this.specialBlockCheck(player, block, 0, direction)) return;
+        if(this.specialBlockCheck(player, lrCollision, direction, 0)) return;
 
-          if (!player.actionState) {
-            if (topDepth > 0 && (player.vX === 0 || Math.sign(player.vX) === direction)) {
-              this.startClimbing(player, direction);
+        if (!player.actionState) {
+          let hlrCollision = this.world.checkLR(player.getTopCollider(), player.isGhost, direction);
+          if (!hlrCollision && (player.vX === 0 || Math.sign(player.vX) === direction)) {
+            this.startClimbing(player, direction);
+            return;
+          } else if (!player.isGrounded && player.wallGrabsRemaining > 0) {
+            let key = direction < 0 ? player.keys.left : player.keys.right;
+            let oKey = direction < 0 ? player.keys.right : player.keys.left;
+
+            if ((!oKey && Math.sign(player.vX) === direction && Math.abs(player.vX) > this.minGrabSpeedX) ||
+                (key && player.vY < 0 && player.vY > this.maxGrabSpeedY)) {
+              this.startWallGrab(player, direction);
               return;
-            } else if (!player.isGrounded && player.wallGrabsRemaining > 0) {
-              let key = direction < 0 ? player.keys.left : player.keys.right;
-              let oKey = direction < 0 ? player.keys.right : player.keys.left;
-
-              if ((!oKey && Math.sign(player.vX) === direction && Math.abs(player.vX) > this.minGrabSpeedX) ||
-                  (key && player.vY < 0 && player.vY > this.maxGrabSpeedY)) {
-                this.startWallGrab(player, direction);
-                return;
-              }
             }
           }
+        }
 
-          if (Math.sign(player.vX) === direction) {
+        if (Math.sign(player.vX) === direction) {
 
-            if (Math.abs(player.vX) < this.minBounceSpeed) {
-              player.vX = 0;
-            } else {
-              player.vX = this.bounce * player.vX;
-              player.bounceTime = this.bounceTime;
-            }
+          if (Math.abs(player.vX) < this.minBounceSpeed) {
+            player.vX = 0;
+          } else {
+            player.vX = this.bounce * player.vX;
+            player.bounceTime = this.bounceTime;
           }
         }
       }
     }
-
-    if (player.actionState && player.actionState.onCollisionLR) {
-      player.actionState.onCollisionLR(hCollision);
-    } else {
-      collideHorizontal(-1, hCollision.left, hCollision.leftBlock, hTopCollision.left, hTopCollision.leftBlock);
-      collideHorizontal(1, hCollision.right, hCollision.rightBlock, hTopCollision.right, hTopCollision.rightBlock);
-    }
   }
 
-  public specialBlockCheck(player: PlayerSprite, block: IGameBlock, vd: number, hd: number) {
-    if (!block) return false;
-    if (block.type === 'switch') {
-      if (vd === 1) {
-        this.world.getObject(block).shrinkAway(() => {
-          GameEvents.SWITCH_ACTIVATED.publish(block);
-        });
-      }
-      return false;
-    } else if (block.type === 'spring' || block.type === 'exploding') {
-      if (block.type === 'exploding') {
-        this.world.getObject(block).explode();
-        if (!player.isGhost) block.usedByPlayer = true;
-        if (player.isGhost) block.usedbyGhost = true;
+  public specialBlockCheck(player: PlayerSprite, c: ColliionResponse, hd: number, vd: number) {
+    if (!c.type) return false;
+    if (c.type === 'spring' || c.type === 'exploding') {
+      if (c.type === 'exploding' && c.block) {
+        c.block.explode();
+        if (player.isGhost) c.block.usedByGhost = true;
+          else c.block.usedByPlayer = true;
       }
       if (vd !== 0) player.vY = this.springSpeed * vd;
       if (hd !== 0) player.vX = this.springSpeed * hd;
-      player.bounceTime = this.bounceTime;
+      player.bounceTime = 0;
       player.landTime = 0;
       if (vd === 1) player.isGrounded = false;
       return true;
-    } else if (block.type === 'goal') {
+    } else if (c.type === 'goal') {
       if (vd === 1) {
         this.startVictory(player, Math.sign(player.vX));
         return true;
       }
     }
+    // if (type === 'switch') {
+    //   if (vd === 1) {
+    //     this.world.getObject(block).shrinkAway(() => {
+    //       GameEvents.SWITCH_ACTIVATED.publish(block);
+    //     });
+    //   }
+    //   return false;
+    // }
 
     return false;
   }
 
-  public checkIfFall(player: PlayerSprite, vCollision: CollisionResponse): Boolean {
-    if (vCollision.down > 0) {
+  public checkIfFall(player: PlayerSprite, dCollision: ColliionResponse): Boolean {
+    if (!dCollision || dCollision.depth < 0) {
       if (player.isCrouching) {
-        vCollision = this.world.checkVertical(player.getCollider(true), player.isGhost);
-        if (vCollision.up < 0) player.y -= vCollision.up;
+        let uCollision = this.world.checkTop(player.getCollider(true), player.isGhost);
+        if (uCollision) player.y += uCollision.depth;
       }
       player.stepBlock = null;
       player.isGrounded = false;
       player.isCrouching = false;
       return true;
     } else {
-      if (vCollision.downBlock) player.stepBlock = vCollision.downBlock;
+      if (dCollision.type) player.stepBlock = dCollision.type;
 
-      if (vCollision.down <= 0 && vCollision.downBlock && vCollision.downBlock.type === 'mud') {
-        player.vX *= (this.mudXExtraFrictionBase + vCollision.down / this.mudMaxSink * this.mudXExtraFrictionMult);
-        if (vCollision.down > this.mudMaxSink) {
-          player.y += this.mudFall;
-        } else {
-          player.y += (vCollision.down - this.mudMaxSink);
-        }
-      } else if (vCollision.down === 0) {
-        return this.specialBlockCheck(player, vCollision.downBlock, 1, 0);
+      // if (dCollision.depth <= 0 && vCollision.downBlock && vCollision.downBlock.type === 'mud') {
+      //   player.vX *= (this.mudXExtraFrictionBase + vCollision.down / this.mudMaxSink * this.mudXExtraFrictionMult);
+      //   if (vCollision.down > this.mudMaxSink) {
+      //     player.y += this.mudFall;
+      //   } else {
+      //     player.y += (vCollision.down - this.mudMaxSink);
+      //   }
+      if (dCollision.depth === 0) {
+        return this.specialBlockCheck(player, dCollision, 0, 1);
       }
     }
 
@@ -417,12 +416,13 @@ export class PlayerMovement {
         return true;
       },
       updateY: () => player.y += this.grabSlideSpeed,
-      onCollisionDown: (vCollision: CollisionResponse) => {
-        player.y += vCollision.down;
+      onCollisionDown: (vCollision: ColliionResponse) => {
+        player.y -= vCollision.depth;
         player.actionState = null;
       },
-      onCollisionLR: (hCollision: CollisionResponse) => {
-        if (hCollision.left > 0 && hCollision.right > 0) {
+      onCollisionLR: () => {
+        let collision = this.world.checkLR(player.getCollider(), player.isGhost, direction);
+        if (!collision) {
           player.actionState = null;
           return;
         }
@@ -446,13 +446,13 @@ export class PlayerMovement {
       updateY: () => {
         player.vY = Math.max(player.vY + this.jetpackYSpeed, this.jetpackMaxSpeed);
       },
-      onCollisionUp: (vCollision: CollisionResponse) => {
+      onCollisionUp: (vCollision: ColliionResponse) => {
         player.vY = this.bounce * player.vY;
         player.bounceTime = this.bounceTime;
       },
-      onCollisionDown: (vCollision: CollisionResponse) => {
+      onCollisionDown: (vCollision: ColliionResponse) => {
         if (player.vY >= 0) {
-          player.y += vCollision.down - player.vY;
+          player.y -= vCollision.depth;
           player.vY = this.bounce * player.vY;
           player.bounceTime = this.bounceTime;
         }
@@ -470,35 +470,23 @@ export class PlayerMovement {
       maxTime: Infinity,
       timeRemaining: Infinity,
       updateY: () => player.y -= this.climbSpeed,
-      onCollisionLR: (hCollision: CollisionResponse) => {
-        if ((player.actionState.direction === -1 && hCollision.left > 0) || (player.actionState.direction === 1 && hCollision.right > 0)) {
+      onCollisionLR: () => {
+        let collision = this.world.checkLR(player.getCollider(), player.isGhost, direction);
+
+        if (!collision) {
           player.isCrouching = true;
           player.isGrounded = true;
           player.x += this.climbInset * player.actionState.direction;
           player.y += 10;
-          let vCollision = this.world.checkVertical(player.getCollider(), player.isGhost);
-          if (vCollision.down < 0) {
-            player.y += vCollision.down;
+          let vCollision = this.world.checkBottom(player.getCollider(), player.isGhost);
+          if (vCollision) {
+            if (vCollision.depth > 0) {
+              player.y -= vCollision.depth;
+            }
           }
-          if (vCollision.up < 0) {
-            player.y -= vCollision.up;
-          }
-          hCollision = this.world.checkHorizontal(player.getCollider(), player.isGhost);
-          if (hCollision.left < 0) player.x -= hCollision.left;
-          if (hCollision.right < 0) player.x += hCollision.right;
+          collision = this.world.checkLR(player.getCollider(), player.isGhost, direction);
+          if (collision && collision.depth > 0) player.x -= collision.depth * direction;
           player.actionState = null;
-        } else {
-          if (player.actionState.direction === -1) {
-            if (hCollision.left === 0 && hCollision.leftBlock) {
-              let blockHeight = hCollision.leftBlock.y;
-              player.climbHeight = blockHeight - player.y;
-            }
-          } else {
-            if (hCollision.right === 0 && hCollision.rightBlock) {
-              let blockHeight = hCollision.rightBlock.y;
-              player.climbHeight = blockHeight - player.y;
-            }
-          }
         }
       },
     };
