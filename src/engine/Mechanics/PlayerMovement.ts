@@ -12,13 +12,13 @@ export class PlayerMovement {
   private jumpSpeed = -9;
   private mudJumpSpeedMin = -3;
   private mudJumpSpeedMult = 2.5;
-  private airMoveSpeed = 0.28;
+  private airMoveSpeed = 0.4;
   private jetpackXSpeed = 0.2;
   private jetpackYSpeed = -0.3;
   private springSpeed = -18;
   private gravity = 0.54;
   private terminalVelocity = 12;
-  private kickVX = 6;
+  private kickVX = 8;
   private climbSpeed = 1.2;
   private minGrabSpeedX = 2.4;
   private maxGrabSpeedY = -1.2;
@@ -37,7 +37,7 @@ export class PlayerMovement {
   private rollSpeedMult = 1.5;
   private friction = 0.8;
   private extraLandFriction = 0.8;
-  private airFriction = 0.95;
+  private airFriction = 0.93;
   private bounce = -0.7;
   
   private bounceTime = 5;
