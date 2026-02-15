@@ -2,7 +2,6 @@ Speedrun
 
 Todo:
 Ghost Improvements
-- Test Ghosts are iron
 - Saving ghosts?
 - Loading ghosts?
 - Multiple ghosts?

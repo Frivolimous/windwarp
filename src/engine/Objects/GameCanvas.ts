@@ -71,7 +71,8 @@ export class GameCanvas extends PIXI.Container {
   }
 
   addConfig(data: ILevelData) {
-    this.layers[GameCanvas.OBJECTS].removeChildren()
+    this.blocks = [];
+    this.layers[GameCanvas.OBJECTS].removeChildren();
     this.layers[GameCanvas.OBJECTS].addChild(data.img);
     this.layers[GameCanvas.OBJECTS].addChild(this.foreground);
     this.foreground.clear();

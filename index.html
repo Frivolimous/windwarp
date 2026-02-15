@@ -32,24 +32,25 @@
       <div id="import-area">
         Import a BITMAP FILE to load your own level!<br>
         <input id="level-select" type="file" accept=".bmp"><br><br>
-        1. Each Pixel = 1 tile (40 pixels)<br>
+        1. Each Pixel = 1 tile (24 pixels)<br>
         2. The following colors are acceptable:<br>
-        '255,0,0': 'player' (need 1 of these)<br>
-        '0,255,0': 'normal ground'<br>
-        '255,255,0': 'spring'<br>
-        '255,170,0': 'exploding'<br>
-        '255,255,255': 'goal'<br>
-        '0,0,0': 'ghost'<br>
-        '0,255,255': 'checkpoint'<br>
+        RED: 'player' (need 1 of these)<br>
+        GREEN: 'normal ground'<br>
+        YELLOW: 'spring'<br>
+        ORANGE: 'exploding'<br>
+        WHITE: 'goal'<br>
+        BLACK: 'secret'<br>
+        TEAL: 'checkpoint'<br>
         Everything else is SKY
         <div>Example: <img src="assets/Level1.bmp"></div>
       </div>
       <div id="instructions">
         <h1>How to Play</h1>
-        Win the level by stepping on a white block. Get there as a fast as you can!<br><br>
+        Win the level by stepping on a goal block. Get there as a fast as you can!<br><br>
         Use w,a,s,d or arrow keys to move around<br>
         CTRL also rolls and SPACE also jumps<br>
-        "V" uses your infinite jetpack (on some levels it's cheating)<br><br>
+        "V" uses your infinite jetpack (on some levels it's cheating)<br>
+        Change your skin in-game using , or .<br><br>
         Use advanced movement controls: Rolling, Climbing, Wall Jumps and Diving!
       </div>
     </div>

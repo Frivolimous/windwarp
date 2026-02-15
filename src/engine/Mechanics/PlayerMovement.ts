@@ -311,9 +311,13 @@ export class PlayerMovement {
     if (!c.type) return false;
     if (c.type === 'spring' || c.type === 'exploding') {
       if (c.type === 'exploding' && c.block) {
-        c.block.explode();
-        if (player.isGhost) c.block.usedByGhost = true;
-          else c.block.usedByPlayer = true;
+        
+        if (player.isGhost) {
+          c.block.usedByGhost = true;
+        } else { 
+          c.block.usedByPlayer = true;
+          c.block.explode();
+        }
       }
       if (vd !== 0) player.vY = this.springSpeed * vd;
       if (hd !== 0) player.vX = this.springSpeed * hd;

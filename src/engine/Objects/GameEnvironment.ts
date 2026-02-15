@@ -34,7 +34,10 @@ export class GameEnvironment {
     let right = Math.floor((sprite.right - 2) / this.TILE_SIZE);
 
     let types: GameBlockType[] = [this.getTypeAt(left, top), this.getTypeAt(right, top)];
-    let blocks: GameBlock[] = [this.getObjectAt(left * this.TILE_SIZE, top * this.TILE_SIZE), this.getObjectAt(right * this.TILE_SIZE, top * this.TILE_SIZE)];
+    let blocks: GameBlock[] = [
+      this.isObjectType(types[0]) && this.getObjectAt(left * this.TILE_SIZE, top * this.TILE_SIZE), 
+      this.isObjectType(types[1]) && this.getObjectAt(right * this.TILE_SIZE, top * this.TILE_SIZE)
+    ];
     
     let globalRight = right * this.TILE_SIZE;
     if ((Math.abs(sprite.left - globalRight) < Math.abs(sprite.right - globalRight))) {
@@ -63,36 +66,34 @@ export class GameEnvironment {
   public checkBottom = (sprite: PlayerCollider, isGhost = true): ColliionResponse => {
     if (sprite.bottom >= this.worldBottom) return {type: undefined, depth: this.worldBottom - sprite.bottom};
 
-    let bottom = Math.floor((sprite.bottom) / this.TILE_SIZE);
+    let tileY = Math.floor((sprite.bottom) / this.TILE_SIZE);
 
-    let left = Math.floor((sprite.left + 1) / this.TILE_SIZE);
-    let right = Math.floor((sprite.right - 2) / this.TILE_SIZE);
+    let tileA = Math.floor((sprite.left + 1) / this.TILE_SIZE);
+    let tileB = Math.floor((sprite.right - 2) / this.TILE_SIZE);
 
-    let types: GameBlockType[] = [this.getTypeAt(left, bottom), this.getTypeAt(right, bottom)];
-    let blocks: GameBlock[] = [this.getObjectAt(left * this.TILE_SIZE, bottom * this.TILE_SIZE), this.getObjectAt(right * this.TILE_SIZE, bottom * this.TILE_SIZE)];
-    
-    let globalRight = right * this.TILE_SIZE;
-    if ((Math.abs(sprite.left - globalRight) < Math.abs(sprite.right - globalRight))) {
-      types = [types[1], types[0]];
-      blocks = [blocks[1], blocks[0]];
+    let worldB = tileB * this.TILE_SIZE;
+
+    if ((Math.abs(sprite.left - worldB) < Math.abs(sprite.right - worldB))) {
+      let temp = tileA;
+      tileA = tileB;
+      tileB = temp;
     }
 
-    let type: GameBlockType;
-    let block: GameBlock;
+    let type = this.getTypeAt(tileA, tileY);
+    let block = this.getObjectAt(tileA * this.TILE_SIZE, tileY * this.TILE_SIZE);
 
-    if (types[0] && (!blocks[0] || (isGhost && !blocks[0].usedByGhost) || (!isGhost && !blocks[0].usedByPlayer))) {
-      type = types[0];
-      block = blocks[0];
-    } else if (types[1] && (!blocks[1] || (isGhost && !blocks[1].usedByGhost) || (!isGhost && !blocks[1].usedByPlayer))) {
-      type = types[1];
-      block = blocks[1];
-    } else {
-      return null;
+    if (type && (!block || (isGhost && !block.usedByGhost) || (!isGhost && !block.usedByPlayer))) {
+      return {type, block, depth: sprite.bottom - tileY * this.TILE_SIZE };
     }
 
-    let depth = sprite.bottom - bottom * this.TILE_SIZE;
+    type = this.getTypeAt(tileB, tileY);
+    block = this.getObjectAt(tileB * this.TILE_SIZE, tileY * this.TILE_SIZE);
 
-    return {type, depth, block};
+    if (type && (!block || (isGhost && !block.usedByGhost) || (!isGhost && !block.usedByPlayer))) {
+      return {type, block, depth: sprite.bottom - tileY * this.TILE_SIZE };
+    }
+
+    return null;
   }
 
   public checkLeft = (sprite: PlayerCollider, isGhost = true): ColliionResponse => {
@@ -223,6 +224,10 @@ export class GameEnvironment {
 
   public tileToGlobal(point: {x: number, y: number}): {x: number, y: number} {
     return {x: point.x * this.TILE_SIZE, y: point.y * this.TILE_SIZE};
+  }
+
+  public isObjectType(type: GameBlockType) {
+    return (type === 'exploding')
   }
 }
 

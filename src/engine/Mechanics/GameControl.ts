@@ -86,7 +86,6 @@ export class GameControl {
   }
 
   loadLevel(i: number) {
-    if (i < 0) return;
     this.currentLevelIndex = i;
     this.running = true;
     LevelLoader.makeLevelDataFromUrl(LevelLoader.levelSources[i]).then(data => this.loadLevelFromData(data))
