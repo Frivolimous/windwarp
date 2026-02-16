@@ -20,6 +20,10 @@ export class PlayerSprite extends PIXI.Container {
   };
 
   public holdUp = false;
+
+  public holdLeft = false;
+  public holdRight = false;
+
   public isGhost = false;
   public skinIndex = 0;
 
@@ -244,10 +248,10 @@ export class PlayerSprite extends PIXI.Container {
 
     let desiredSkew = this.vX * this.skewMult;
     let desiredVStretch = 1;
-    if (this.isCrouching) desiredSkew *= 4;
+    if (this.isCrouching && this.isGrounded) desiredSkew *= 4;
 
     desiredVStretch = 1 + Math.min(Math.abs(this.vY) * this.vStretchMult, this.maxVStretch);
-    if (this.isCrouching || (this.actionState && this.actionState.type === 'climbing')) {
+    if ((this.isCrouching && this.isGrounded) || (this.actionState && this.actionState.type === 'climbing')) {
       desiredVStretch *= 0.5;
     }
 
@@ -454,6 +458,7 @@ export interface ActionState {
   onExpire?: () => void;
   onJump?: () => void;
   onDown?: () => void;
+  onLR?: (direction: number) => void;
   canJump?: boolean;
   hasPhysics?: boolean;
   updateY?: () => void;

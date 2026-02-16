@@ -48,7 +48,7 @@ export class LevelLoader {
       }
     });
 
-    for (let y = 0; y < 6; y++) {
+    for (let y = 0; y < 7; y++) {
       let skin: PIXI.Texture[] = [];
       this.skins.push(skin);
       for (let x = 0; x < 3; x++) {
