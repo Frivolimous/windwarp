@@ -16,7 +16,8 @@ export class PlayerMovement {
   private jetpackXSpeed = 0.2;
   private jetpackYSpeed = -0.3;
   private springSpeed = -18;
-  private gravity = 0.54;
+  private climbGravity = 0.54;
+  private fallGravity = 0.4;
   private terminalVelocity = 12;
   private kickVX = 8;
   private climbSpeed = 1.2;
@@ -149,7 +150,8 @@ export class PlayerMovement {
     }
 
     if (!player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
-      player.vY = Math.min(player.vY + this.gravity, this.terminalVelocity);
+      if (player.vY < 0) player.vY = Math.min(player.vY + this.climbGravity, this.terminalVelocity);
+      else player.vY = Math.min(player.vY + this.fallGravity, this.terminalVelocity);
     }
 
     let friction = 1;

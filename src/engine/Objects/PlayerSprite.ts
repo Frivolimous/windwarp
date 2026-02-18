@@ -264,7 +264,7 @@ export class PlayerSprite extends PIXI.Container {
     }
 
     if (this.landTime > 0) {
-      desiredVStretch *= 0.8;
+      desiredVStretch *= 0.6;
     }
 
     let skew = this.body.skew.x;
@@ -365,7 +365,7 @@ export class PlayerSprite extends PIXI.Container {
             dlx = this.collider.width * (-0.6);
             drx = this.collider.width * (0.6);
           } else {
-            this.handAnimationSpeed = 0.2;
+            this.handAnimationSpeed = 0.4;
             //BREATHE
             let iPercent = this.handsTick / this.handsTime;
             let ia = (Math.abs(iPercent * 2 - 1));
@@ -394,7 +394,7 @@ export class PlayerSprite extends PIXI.Container {
             dlx = this.collider.width * (1.5 * (1 - Math.abs(percent * 4 - 2)));
             drx = this.collider.width * (1.5 * (Math.abs(percent * 4 - 2) - 1));
           } else {
-            this.handAnimationSpeed = 1;
+            this.handAnimationSpeed = 0.2;
             // SWING
             let percentW = this.handsTick / this.handsTime;
   
@@ -439,7 +439,11 @@ export class PlayerSprite extends PIXI.Container {
 
     this.setChildIndex(this.rightHand, this.vX <= 0 ? 3 : 0);
     this.setChildIndex(this.leftHand, this.vX >= 0 ? 3 : 0);
-
+    
+    if (this.landTime > 0) {
+      dly += 10;
+      dry += 10;
+    }
 
     this.leftHand.x += (dlx - this.leftHand.position.x) * this.handAnimationSpeed;
     this.leftHand.y += (dly - this.leftHand.position.y) * this.handAnimationSpeed;
