@@ -15,7 +15,7 @@ import { GameTimer } from '../Objects/GameTimer';
 import { InputStream } from '../../services/InputStream';
 
 export class GameControl {
-  GHOST_MODE: 'off' | 'live' | 'replay' = 'off';
+  GHOST_MODE: 'off' | 'live' | 'replay' = 'replay';
   TWO_PLAYER = false;
   public currentLevelIndex: number = 4;
   s
@@ -62,12 +62,7 @@ export class GameControl {
       });
     });
 
-    GameEvents.LEVEL_COMPLETE.addListener(() => {
-      this.running = false;
-      this.loopingFireworks();
-      this.levelCompleteText.text = `Level Complete!\n  Time: ${(this.timer.getTime() / 1000).toFixed(2)}s`;
-      this.canvas.layers[GameCanvas.UI].addChild(this.levelCompleteText);
-    });
+    GameEvents.LEVEL_COMPLETE.addListener(this.onLevelComplete);
     this.canvas.addEventListener('mousedown', e => {
       let position = e.getLocalPosition(this.canvas);
       Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: position.x, y: position.y });
@@ -78,10 +73,33 @@ export class GameControl {
     this.TWO_PLAYER = !this.TWO_PLAYER;
   }
 
+  onLevelComplete = () => {
+      this.running = false;
+      this.loopingFireworks();
+      let time = this.timer.getTime() / 1000;
+
+      this.levelCompleteText.text = `Level Complete!\n  Time: ${(time).toFixed(2)}s`;
+      this.canvas.layers[GameCanvas.UI].addChild(this.levelCompleteText);
+      if (this.GHOST_MODE !== 'live' && (!this.replayingStream || time < this.replayingStream.data.time)) {
+        this.recordingStream.data.time = time;
+        let extrinsic = Facade.saveM.getExtrinsic();
+        let index = extrinsic.levelGhosts.findIndex(el => el.mapId === this.currentLevelIndex);
+        if (index < 0) {
+          extrinsic.levelGhosts.push(this.recordingStream.data);
+        } else {
+          extrinsic.levelGhosts[index] = this.recordingStream.data;
+        }
+        Facade.saveM.saveExtrinsic();
+
+        this.levelCompleteText.text += '\nNew Record!';
+        console.log('a');
+      }
+  }
+
   loopingFireworks() {
     setTimeout(() => {
       Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: Math.random() * this.camera.viewWidth, y: Math.random() * this.camera.viewHeight, tint: Math.random() * 0xffffff });
-      if (!this.running) this.loopingFireworks();
+      if (!this.running && this.canvas.layers[GameCanvas.UI].children.indexOf(this.levelCompleteText) >= 0) this.loopingFireworks();
     }, 50);
   }
 
@@ -137,20 +155,10 @@ export class GameControl {
   }
 
   setupGhost(data: ILevelData) {
-    if (this.GHOST_MODE === 'replay') {
-      if (this.recordingStream && this.recordingStream.mapId === this.currentLevelIndex) {
-        this.replayingStream = this.recordingStream;
-        this.replayingStream.resetPlayback();
+    if (this.currentLevelIndex === -1) return;
 
-        this.addGhostPlayer();
-
-        this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
-        this.ghostPlayer.reset();
-      }
-
-      this.recordingStream = new InputStream(this.currentLevelIndex);
-    } else if (this.GHOST_MODE === 'live') {
-      let stream = new InputStream(this.currentLevelIndex);
+    if (this.GHOST_MODE === 'live') {
+      let stream = new InputStream({mapId: this.currentLevelIndex, record: [], time: 0});
       this.recordingStream = stream;
       this.replayingStream = stream;
       stream.resetPlayback();
@@ -161,9 +169,26 @@ export class GameControl {
       this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
       this.ghostPlayer.reset();
     } else {
-      if (this.ghostPlayer) {
-        this.canvas.removePlayer(this.ghostPlayer);
-        this.ghostPlayer = null;
+      this.recordingStream = new InputStream({mapId: this.currentLevelIndex, record: [], time: 0});
+      let record = Facade.saveM.getExtrinsic().levelGhosts.find(el => el.mapId === this.currentLevelIndex);
+      if (record) {
+        this.replayingStream = new InputStream(record);
+        if (this.GHOST_MODE === 'replay') {
+          this.addGhostPlayer();
+          this.ghostPlayer.position.set(data.startingPosition.x, data.startingPosition.y);
+          this.ghostPlayer.reset();
+        } else {
+          if (this.ghostPlayer) {
+            this.canvas.removePlayer(this.ghostPlayer);
+            this.ghostPlayer = null;
+          }
+        }
+      } else {
+        this.replayingStream = null;
+        if (this.ghostPlayer) {
+          this.canvas.removePlayer(this.ghostPlayer);
+          this.ghostPlayer = null;
+        }
       }
     }
   }

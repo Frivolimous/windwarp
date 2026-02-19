@@ -4,14 +4,13 @@ import _, { forEach } from 'lodash';
 export class InputStream {
   recordingStep = 0;
   replayingStep = 0;
-  changeRecord: ChangeRecord[] = [];
   previousState: Record<PlayerKeys, boolean>;
 
   replayIndex = 0;
 
   keys: PlayerKeys[] = ['down','up','left','right','jetpack','dash'];
 
-  constructor(public mapId: number) {
+  constructor(public data: InputStreamData) {
   }
 
   resetPlayback() {
@@ -28,7 +27,7 @@ recordStep(player: PlayerSprite) {
     this.previousState = { ...player.keys };
 
     for (let key of this.keys) {
-      this.changeRecord.push({time: this.recordingStep, key, state: this.previousState[key]});
+      this.data.record.push({time: this.recordingStep, key, state: this.previousState[key]});
     }
   } else {
     for (let key of this.keys) {
@@ -36,7 +35,7 @@ recordStep(player: PlayerSprite) {
       const previous = this.previousState[key];
   
       if (current !== previous) {
-        this.changeRecord.push({
+        this.data.record.push({
           time: this.recordingStep,
           key,
           state: current
@@ -52,15 +51,14 @@ recordStep(player: PlayerSprite) {
   playStep(player: PlayerSprite) {
     this.replayingStep++;
 
-    while (this.replayIndex < this.changeRecord.length && this.changeRecord[this.replayIndex].time <= this.replayingStep) {
-      player.keys[this.changeRecord[this.replayIndex].key] = this.changeRecord[this.replayIndex].state;
+    while (this.replayIndex < this.data.record.length && this.data.record[this.replayIndex].time <= this.replayingStep) {
+      player.keys[this.data.record[this.replayIndex].key] = this.data.record[this.replayIndex].state;
       this.replayIndex++;
     }
   }
 
   clone(): InputStream {
-    let stream = new InputStream(this.mapId);
-    stream.changeRecord = _.cloneDeep(this.changeRecord);
+    let stream = new InputStream(_.cloneDeep(this.data));
     return stream;
   }
 }
@@ -69,4 +67,10 @@ interface ChangeRecord {
   time: number;
   key: PlayerKeys;
   state: boolean;
-}
+};
+
+export interface InputStreamData {
+  mapId: number;
+  time: number;
+  record: ChangeRecord[];
+};

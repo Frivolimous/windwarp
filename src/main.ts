@@ -8,6 +8,8 @@ import { MenuUI } from "./pages/MenuUI";
 import { GameUI } from "./pages/GameUI";
 import { BaseUI } from "./pages/_BaseUI";
 import { JMTween } from "./JMGE/JMTween";
+import { SaveManager } from "./JMGE/SaveManager";
+import { InputStreamData } from "./services/InputStream";
 
 export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 
@@ -19,6 +21,7 @@ export const Facade = new class {
   public mainPage: MenuUI;
   public gamePage: GameUI;
   public blackScreen = new PIXI.Graphics();
+  public saveM: SaveManager<IExtrinsicModel>;
 
   public currentPage: BaseUI;
 
@@ -51,8 +54,15 @@ export const Facade = new class {
     TextureCache.initialize(this.app);
 
     // await FontLoader.load(_.map(Fonts));
+    this.saveM = new SaveManager({
+      CurrentVersion: 0.01,
+      DocName: 'Windwarp-Save',
+      VerName: 'Windwarp-Version',
+      SaveLoc: 'local',
+    }, dExtrinsicModel);
 
-    await LevelLoader.initialize();    
+    await this.saveM.init();
+    await LevelLoader.initialize();
 
     this.init();
   }
@@ -116,3 +126,11 @@ export const Facade = new class {
     });
   }
 }
+
+export interface IExtrinsicModel {
+  levelGhosts: InputStreamData[];
+}
+
+export const dExtrinsicModel: IExtrinsicModel = {
+  levelGhosts: [],
+};

@@ -32,6 +32,7 @@ export class PlayerMovement {
   private mudFall = 0.1;
   private minMudJumpStop = 0;
   private wallCoyoteVY = -0.1;
+  private vaultSpeed = 4;
 
   private mudXExtraFrictionBase = 0.3;
   private mudXExtraFrictionMult = -0.1;
@@ -116,6 +117,7 @@ export class PlayerMovement {
         player.vY = Math.max(this.jumpSpeed, player.vY + this.jumpSpeed);
         // }
 
+        player.takeoff();
         player.isGrounded = false;
         player.isCrouching = false;
         player.landTime = 0;
@@ -138,9 +140,8 @@ export class PlayerMovement {
         } else {
           player.isCrouching = true;
         }
-      } else if (!player.isCrouching) {
+      } else {
         player.vY = Math.max(this.divingSpeed, player.vY);
-        player.isCrouching = true;
       }
     } else {
       if (player.actionState) {}
@@ -260,6 +261,7 @@ export class PlayerMovement {
     
               player.y -= downCollision.depth;
               player.vY = 0;
+              player.landing();
             } else {
               if (downCollision.depth < -player.height) {
                 this.respawn(player);
@@ -519,6 +521,7 @@ export class PlayerMovement {
         player.actionState = null;
         player.isGrounded = false;
         player.isCrouching = true;
+        player.holdLeft = player.holdRight = false;
       },
       onCollisionLR: () => {
         let collision = this.world.checkLR(player.getCollider(), player.isGhost, direction);
@@ -543,8 +546,21 @@ export class PlayerMovement {
         player.actionState = null;
         player.isGrounded = false;
         player.isCrouching = true;
+      },
+
+      onLR: (d: number) => {
+        if (d === direction && (direction === 1 && !player.holdRight) || (direction === -1 && !player.holdLeft)) {
+          player.actionState = null;
+          let climbHeight = Math.round((player.y - player.height / 2) / LevelLoader.TILE_SIZE) * LevelLoader.TILE_SIZE;
+          player.y = climbHeight;
+          player.x += this.climbInset * direction;
+          player.vX = this.vaultSpeed * direction;
+          this.startRoll(player, direction);
+        }
       }
     };
+
+    direction === 1 ? (player.holdRight = true) : (player.holdLeft = true);
 
     player.isCrouching = true;
     player.isGrounded = true;

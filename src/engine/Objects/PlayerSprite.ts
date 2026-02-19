@@ -125,25 +125,19 @@ export class PlayerSprite extends PIXI.Container {
     this.rightHand.texture = skin[0];
   }
 
-  // setMovementState(state: MovementState) {
-  //   if (state === this.movementState) return;
+  landing() {
+    let tint = BlockColors[this.stepBlock];
+    Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint, 
+                      angle_min: Math.PI, angle_max: Math.PI * 2, 
+                      mag_min: 0.7, mag_max: 1});
+  }
 
-  //   let tint = 0x888888;
-  //   if (this.stepBlock) {
-  //     tint = BlockColors[this.stepBlock.type];
-  //   }
-
-  //   if (state === 'ascending') {
-  //     if (!this.isJetpacking) {
-  //       Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
-  //     }
-  //   } else if (this.movementState === 'falling' && state === 'walking') {
-  //     Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint });
-  //   }
-  //   this.movementState = state;
-  //   // this.movementStateData = MovementStateDataRecord[state];
-  //   GameEvents.ACTIVITY_LOG.publish({ slug: 'PLAYER_STATE', text: state });
-  // }
+  takeoff() {
+    let tint = BlockColors[this.stepBlock];
+    Firework.makeExplosion(this.parent, { x: this.x, y: this.y, count: 5, tint, 
+                      angle_min: Math.PI, angle_max: Math.PI * 2, 
+                      mag_min: 0.7, mag_max: 1});
+  }
 
   public getCollider(forceFullSize = false): PlayerCollider {
     if (this.isCrouching && !forceFullSize) {
@@ -365,7 +359,7 @@ export class PlayerSprite extends PIXI.Container {
             dlx = this.collider.width * (-0.6);
             drx = this.collider.width * (0.6);
           } else {
-            this.handAnimationSpeed = 0.4;
+            this.handAnimationSpeed = 0.2;
             //BREATHE
             let iPercent = this.handsTick / this.handsTime;
             let ia = (Math.abs(iPercent * 2 - 1));

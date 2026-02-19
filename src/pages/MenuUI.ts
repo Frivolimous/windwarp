@@ -10,6 +10,7 @@ export class MenuUI extends BaseUI {
   ghostB: Button;
   player1Avatar: SpriteButton;
   player2Avatar: SpriteButton;
+  levelItems: LevelItem[] = [];
 
   constructor(bounds: PIXI.Rectangle) {
     super();
@@ -18,41 +19,14 @@ export class MenuUI extends BaseUI {
     
     let title = new PIXI.Text({text: 'Level Up Speed Run: D.A.D.A.!', style: {fontSize: 50}});
     title.position.set(25, 50);
-    
-    let abaLevels = new PIXI.Text({text: "Dad's Levels:", style: {fontSize: 25}});
-    let aba1 = new Button({buttonLabel: 'Loopy', onClick: () => this.startLevel(0), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let aba2 = new Button({buttonLabel: 'Super Obby', onClick: () => this.startLevel(4), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let aba3 = new Button({buttonLabel: 'Hurdles', onClick: () => this.startLevel(9), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let aba4 = new Button({buttonLabel: 'Quicksand', onClick: () => this.startLevel(11), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    abaLevels.position.set(25, 150);
-    aba1.position.set(25, 190);
-    aba2.position.set(25, 240);
-    aba3.position.set(25, 290);
-    aba4.position.set(25, 340);
-    
-    let talyaLevels = new PIXI.Text({text: "Pizza Rainbow Levels:", style: {fontSize: 25}});
-    let talya1 = new Button({buttonLabel: 'The Mountains', onClick: () => this.startLevel(1), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let talya2 = new Button({buttonLabel: 'Fall Secrets', onClick: () => this.startLevel(7), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let talya3 = new Button({buttonLabel: 'Escape Room', onClick: () => this.startLevel(8), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    talyaLevels.position.set(275, 150);
-    talya1.position.set(300, 190);
-    talya2.position.set(300, 240);
-    talya3.position.set(300, 290);
-    
-    let oriLevels = new PIXI.Text({text: "Electric Orb Levels:", style: {fontSize: 25}});
-    let ori1 = new Button({buttonLabel: 'Treasure Hunt', onClick: () => this.startLevel(2), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori2 = new Button({buttonLabel: 'Sky Base', onClick: () => this.startLevel(3), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori3 = new Button({buttonLabel: 'AOAO', onClick: () => this.startLevel(5), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori4 = new Button({buttonLabel: 'Secret Passage', onClick: () => this.startLevel(6), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    let ori5 = new Button({buttonLabel: 'Level AW', onClick: () => this.startLevel(10), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
-    oriLevels.position.set(575, 150);
-    ori1.position.set(600, 190);
-    ori2.position.set(600, 240);
-    ori3.position.set(600, 290);
-    ori4.position.set(600, 340);
-    ori5.position.set(600, 390);
 
-    this.ghostB = new Button({buttonLabel: 'No Ghost', onClick: this.toggleGhost, color: 0x00ccff, width: 90, height: 30, labelStyle: {fontSize: 15 }});
+    this.addChild(background, title);
+
+    this.addColumn("Dad's Levels:", [['Loopy', 0], ['Super Obby', 4], ['Hurdles', 9]/*, ['Quicksand', 11]*/], 100, 150, 10);
+    this.addColumn("Pizza Rainbow Levels:", [['The Mountains', 1], ['Fall Secrets', 7], ['Escape Room', 8]], 375, 150, 10);
+    this.addColumn("Electric Orb Levels:", [['Treasure Hunt', 2], ['Sky Base', 3], ['AOAO', 5], ['Secret Passage', 6], ['Level AW', 10]], 675, 150, 10);
+
+    this.ghostB = new Button({buttonLabel: 'Replay Ghost', onClick: this.toggleGhost, color: 0x00ccff, width: 90, height: 30, labelStyle: {fontSize: 15 }});
     this.ghostB.position.set(50, 505);
 
     this.playerB = new Button({buttonLabel: 'One Player', onClick: this.togglePlayerCount, color: 0xccff66, width: 150, height: 40, labelStyle: {fontSize: 20 }});
@@ -64,15 +38,24 @@ export class MenuUI extends BaseUI {
     this.player2Avatar.position.set(485, 500);
     this.player2Avatar.visible = false;
 
-    this.addChild(background, title);
-    this.addChild(abaLevels, aba1, aba2, aba3);
-    this.addChild(talyaLevels, talya1, talya2, talya3);
-    this.addChild(oriLevels, ori1, ori2, ori3, ori4, ori5);
-
     this.addChild(this.playerB);
     this.addChild(this.player1Avatar);
     this.addChild(this.player2Avatar);
     this.addChild(this.ghostB);
+  }
+
+  public addColumn(columnName: string, levelArray: [string, number][], centerX: number, top: number, gap: number) {
+    let title = new PIXI.Text({text: columnName, style: {fontSize: 25}});
+    title.position.set(centerX - title.width / 2, top);
+    this.addChild(title);
+
+
+    levelArray.forEach((el, i) => {
+      let item = new LevelItem(el[0], el[1], this.startLevel);
+      this.levelItems.push(item);
+      item.position.set(centerX - 75, top + 40 + (40 + gap) * i);
+      this.addChild(item);
+    });
   }
 
   public startLevel(i: number) {
@@ -106,8 +89,10 @@ export class MenuUI extends BaseUI {
   public toggleGhost = () => {
       // GHOST_MODE: 'off' | 'live' | 'replay' = 'off';
     switch(Facade.gamePage.control.GHOST_MODE) {
-      case 'off': Facade.gamePage.control.GHOST_MODE = 'live'; this.ghostB.addLabel('Live Ghost'); break;
-      case 'live': Facade.gamePage.control.GHOST_MODE = 'replay'; this.ghostB.addLabel('Replay'); break;
+      // case 'off': Facade.gamePage.control.GHOST_MODE = 'live'; this.ghostB.addLabel('Live Ghost'); break;
+      // case 'live': Facade.gamePage.control.GHOST_MODE = 'replay'; this.ghostB.addLabel('Replay'); break;
+      // case 'replay': Facade.gamePage.control.GHOST_MODE = 'off'; this.ghostB.addLabel('No Ghost'); break;
+      case 'off': Facade.gamePage.control.GHOST_MODE = 'replay'; this.ghostB.addLabel('Replay Ghost'); break;
       case 'replay': Facade.gamePage.control.GHOST_MODE = 'off'; this.ghostB.addLabel('No Ghost'); break;
     }
   }
@@ -115,10 +100,54 @@ export class MenuUI extends BaseUI {
   public navIn = () => {
     Facade.gamePage.control.player && this.player1Avatar.addTexture(Facade.gamePage.control.player.head.texture);
     Facade.gamePage.control.player2 && this.player2Avatar.addTexture(Facade.gamePage.control.player2.head.texture);
+
+    let extrinsic = Facade.saveM.getExtrinsic();
+
+    extrinsic.levelGhosts.forEach(ghost => {
+      let item = this.levelItems.find(el => el.index === ghost.mapId);
+      if (item) {
+        item.updateTime(ghost.time);
+      }
+    })
   }
 
   public navOut = () => {
 
+  }
+}
+
+class LevelItem extends PIXI.Container{
+  button: Button;
+  highscore: PIXI.Text;
+
+
+  constructor(name: string, public index: number, onClick: (index: number) => void) {
+    super();
+    this.button = new Button({buttonLabel: name, onClick: () => onClick(index), color: 0xffcc00, width: 150, height: 40, labelStyle: {fontSize: 20 }});
+    this.addChild(this.button);
+  }
+
+  updateTime(time: number) {
+    if (!this.highscore) {
+      this.highscore = new PIXI.Text({style: {fontSize: 12}});
+      this.highscore.position.set(155, 14);
+      this.addChild(this.highscore);
+    }
+    let minutes = Math.floor(time / 60);
+    let seconds = Math.floor(time - minutes * 60);
+    let milli = Math.floor((time - Math.floor(time)) * 1000);
+
+    this.highscore.text = `${this.addZeroes(minutes, 1)}:${this.addZeroes(seconds, 2)}:${this.addZeroes(milli, 3)}`;
+  }
+
+  addZeroes(n: number, digits: number) {
+    let s = n.toString();
+
+    while (s.length < digits) {
+      s = '0' + s;
+    }
+
+    return s;
   }
 }
 
