@@ -18,7 +18,9 @@ export class PlayerMovement {
   private springSpeed = -18;
   private climbGravity = 0.54;
   private fallGravity = 0.4;
+  private parachuteGravity = 0.3;
   private terminalVelocity = 12;
+  private parachuteTerminal = 10;
   private kickVX = 8;
   private climbSpeed = 1.2;
   private minGrabSpeedX = 2.4;
@@ -152,6 +154,7 @@ export class PlayerMovement {
 
     if (!player.isGrounded && (!player.actionState || player.actionState.hasPhysics)) {
       if (player.vY < 0) player.vY = Math.min(player.vY + this.climbGravity, this.terminalVelocity);
+      else if (player.holdUp && player.vY <= this.parachuteTerminal) player.vY = Math.min(player.vY + this.parachuteGravity, this.parachuteTerminal);
       else player.vY = Math.min(player.vY + this.fallGravity, this.terminalVelocity);
     }
 
