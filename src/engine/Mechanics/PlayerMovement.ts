@@ -400,6 +400,10 @@ export class PlayerMovement {
       timeRemaining: Infinity,
     };
 
+    player.vX = player.vY = 0;
+    player.isGrounded = true;
+    player.isCrouching = false;
+
     if (!player.isGhost) GameEvents.LEVEL_COMPLETE.publish();
   }
 
