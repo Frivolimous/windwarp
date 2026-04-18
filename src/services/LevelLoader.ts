@@ -16,6 +16,7 @@ export class LevelLoader {
     'assets/Level10.bmp',
     'assets/Level11.bmp',
     'assets/Level12.bmp',
+    'assets/Level13.bmp',
   ];
 
   static TilemapSrc = 'assets/Tilemap24PLUS.png';

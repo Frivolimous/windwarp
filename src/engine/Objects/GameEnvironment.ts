@@ -4,8 +4,6 @@ import { GameCanvas } from "./GameCanvas";
 import { PlayerCollider, PlayerSprite } from "./PlayerSprite";
 
 export class GameEnvironment {
-  private worldLeft = 0;
-  private worldRight = 1900;
   private TILE_SIZE = 24;
   
   public worldBottom = 900;
@@ -20,7 +18,6 @@ export class GameEnvironment {
 
   setupLevel(data: ILevelData) { 
     this.data = data; 
-    this.worldRight = data.width;
     this.worldBottom = data.height;
     this.tiles = data.tiles;
     this.objects = data.objects;
@@ -226,8 +223,8 @@ export class GameEnvironment {
     return {x: point.x * this.TILE_SIZE, y: point.y * this.TILE_SIZE};
   }
 
-  public isObjectType(type: GameBlockType) {
-    return (type === 'exploding')
+  public isObjectType(type: GameBlockType) { // is the tile an OBJECT block?
+    return (type === 'exploding');
   }
 }
 

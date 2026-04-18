@@ -1,30 +1,31 @@
 Speedrun
 
 Todo:
+Controller Support xxx
+Fullscreen xxx
+
 Ghost Improvements
-- Saving ghosts?
-- Loading ghosts?
 - Multiple ghosts?
 - Optimize with bitstream
 
 Menu
-- look better
+- look better xx
 - level load - loading screen
+- level stucture xxx
+- stars
 
-Map Editor / Bitmap Editor
+Map Editor / Bitmap Editor xxx
 background colors
 
 Collision Detection:
 bitmask the grid?
-Handle faster than 0.5 Tile Size (Swept Movement)
+Handle faster than 0.5 Tile Size (Swept Movement) xxx
 
 Movement Systems:
 - Coyote Time
   - ledges
-  - wall jump release
 - Ledge Forgiveness
 - Dash Button?
-- Generally refactor / combine
 
 Extras
 - Camera shake?
@@ -39,3 +40,7 @@ Tiles:
 
 Player: Fix up vfx
 
+MOVES:
+- Dash?
+- Jump Chaining?
+- Corner Boost?

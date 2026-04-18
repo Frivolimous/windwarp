@@ -28,7 +28,7 @@ export class PlayerMovement {
   private divingSpeed = 12;
   private grabSlideSpeed = 0.6;
   private maxRollSpeed = 9;
-  private rollSpeedNeeded = 2.448;
+  private rollSpeedNeeded = 2.4;
   private jetpackMaxSpeed = -6;
   private climbInset = 3.6;
   private mudFall = 0.1;
