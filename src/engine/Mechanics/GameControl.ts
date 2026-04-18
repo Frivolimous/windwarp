@@ -6,7 +6,6 @@ import { GameEvents } from "../../services/GameEvents";
 import { KeyboardControl } from "../../services/KeyboardControl";
 import { ILevelData, LevelLoader } from "../../services/LevelLoader";
 import { IGameBlock } from "../Objects/GameBlock";
-import { GameCamera } from "../Objects/GameCamera";
 import { GameCanvas } from "../Objects/GameCanvas";
 import { GameEnvironment } from "../Objects/GameEnvironment";
 import { PlayerSprite } from "../Objects/PlayerSprite";
@@ -18,33 +17,23 @@ export class GameControl {
   GHOST_MODE: 'off' | 'live' | 'replay' = 'replay';
   TWO_PLAYER = false;
   public currentLevelIndex: number = 4;
-  s
+
   public player: PlayerSprite;
   public player2: PlayerSprite;
   public ghostPlayer: PlayerSprite;
 
   private playerMovement: PlayerMovement;
   private gameEnvironment: GameEnvironment;
-  private camera: GameCamera;
   private running = true;
-  private timer = new GameTimer();
   private levelCompleteText = new PIXI.Text({ text: 'Level Complete!', style: { fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 } } });
   private gameStartText = new PIXI.Text({ text: 'Press any key to start', style: { fontSize: 40, fill: 0xffffff, dropShadow: { color: 0, blur: 4, distance: 6 } } });
 
   private recordingStream: InputStream;
   private replayingStream: InputStream;
 
-  constructor(private canvas: GameCanvas, private keyboard: KeyboardControl) {
+  constructor(private canvas: GameCanvas, private keyboard: KeyboardControl, private timer: GameTimer) {
     this.gameEnvironment = new GameEnvironment(canvas);
     this.playerMovement = new PlayerMovement(this.gameEnvironment);
-    this.camera = new GameCamera(this.canvas);
-    this.timer.position.set(Facade.worldBounds.width - 80, 20);
-
-    this.levelCompleteText.anchor.set(0.5);
-    this.levelCompleteText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
-
-    this.gameStartText.anchor.set(0.5);
-    this.gameStartText.position.set(this.camera.viewWidth / 2, this.camera.viewHeight / 2);
 
     this.player = new PlayerSprite();
     this.player.nextSkin(0);
@@ -63,10 +52,6 @@ export class GameControl {
     });
 
     GameEvents.LEVEL_COMPLETE.addListener(this.onLevelComplete);
-    this.canvas.addEventListener('mousedown', e => {
-      let position = e.getLocalPosition(this.canvas);
-      Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: position.x, y: position.y });
-    });
   }
 
   togglePlayerCount = () => {
@@ -79,7 +64,8 @@ export class GameControl {
       let time = this.timer.getTime() / 1000;
 
       this.levelCompleteText.text = `Level Complete!\n  Time: ${(time).toFixed(2)}s`;
-      this.canvas.layers[GameCanvas.UI].addChild(this.levelCompleteText);
+      this.canvas.addCenteredTextObject(this.levelCompleteText);
+
       if (this.GHOST_MODE !== 'live' && (!this.replayingStream || time < this.replayingStream.data.time)) {
         this.recordingStream.data.time = time;
         let extrinsic = Facade.saveM.getExtrinsic();
@@ -98,7 +84,7 @@ export class GameControl {
 
   loopingFireworks() {
     setTimeout(() => {
-      Firework.makeExplosion(this.canvas.layers[GameCanvas.UI], { x: Math.random() * this.camera.viewWidth, y: Math.random() * this.camera.viewHeight, tint: Math.random() * 0xffffff });
+      this.canvas.addRandomExplosion();
       if (!this.running && this.canvas.layers[GameCanvas.UI].children.indexOf(this.levelCompleteText) >= 0) this.loopingFireworks();
     }, 50);
   }
@@ -110,7 +96,6 @@ export class GameControl {
   }
 
   loadLevelFromData(data: ILevelData) {
-    Facade.gamePage.addChild(this.timer);
     this.timer.reset();
     this.timer.pause();
     this.canvas.layers[GameCanvas.UI].removeChild(this.levelCompleteText);
@@ -132,11 +117,11 @@ export class GameControl {
     this.setupKeys();
     this.setupGhost(data);
 
-    this.camera.update(this.player, true);
+    this.canvas.camera.update(this.player, true);
 
     this.running = false;
     window.requestAnimationFrame(() => {
-      this.canvas.layers[GameCanvas.UI].addChild(this.gameStartText);
+      this.canvas.addCenteredTextObject(this.gameStartText);
       this.keyboard.onAnyKey(() => {
         this.running = true;
         this.gameStartText.parent.removeChild(this.gameStartText);
@@ -193,6 +178,18 @@ export class GameControl {
     }
   }
 
+  deleteLevelGhost() {
+    let extrinsic = Facade.saveM.getExtrinsic();
+    let ghostIndex = extrinsic.levelGhosts.findIndex(el => el.mapId === this.currentLevelIndex);
+    if (ghostIndex >= 0) extrinsic.levelGhosts.splice(ghostIndex, 1);
+
+    this.replayingStream = null;
+    if (this.ghostPlayer) {
+      this.canvas.removePlayer(this.ghostPlayer);
+      this.ghostPlayer = null;
+    }
+  }
+
   setupKeys() {
     this.keyboard.clear();
 
@@ -218,9 +215,9 @@ export class GameControl {
       this.keyboard.addKey({ keys: ['s', 'arrowdown', 'control'], onDown: () => this.player.keys.down = true, onUp: () => this.player.keys.down = false });
       this.keyboard.addKey({ keys: ['d', 'arrowright'], onDown: () => this.player.keys.right = true, onUp: () => this.player.keys.right = false });
       this.keyboard.addKey({ keys: ['v'], onDown: () => this.player.keys.jetpack = true, onUp: () => this.player.keys.jetpack = false });
-      this.keyboard.addKey({ keys: ['.'], onDown: () => this.player.nextSkin(1) });
-      this.keyboard.addKey({ keys: [','], onDown: () => this.player.nextSkin(-1) });
+      this.keyboard.addKey({ keys: ['o'], onDown: () => this.deleteLevelGhost() });
     }
+    this.keyboard.addKey({ keys: [','], onDown: () => this.player.nextSkin(-1) });
 
     this.keyboard.addKey({ keys: ['escape'], onDown: () => Facade.setPage(Facade.mainPage) });
     this.keyboard.addKey({ keys: ['enter'], onDown: () => this.loadLevel(this.currentLevelIndex) });
@@ -255,9 +252,9 @@ export class GameControl {
     if (this.TWO_PLAYER) {
       this.playerMovement.playerTick(this.player2);
       this.player2.updateView();
-      this.camera.updateTwo(this.player, this.player2);
+      this.canvas.camera.updateTwo(this.player, this.player2);
     } else {
-      this.camera.update(this.player);
+      this.canvas.camera.update(this.player);
     }
 
     for (let i = this.canvas.blocks.length - 1; i >= 0; i--) {

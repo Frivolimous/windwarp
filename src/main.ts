@@ -16,6 +16,7 @@ export let interactionMode: 'desktop' | 'mobile' = 'desktop';
 export const Facade = new class {
   public app: PIXI.Application;
 
+  public defaultWorldBounds = new PIXI.Rectangle(0, 0, 950, 600);
   public worldBounds = new PIXI.Rectangle(0, 0, 950, 600);
 
   public mainPage: MenuUI;
@@ -124,6 +125,32 @@ export const Facade = new class {
         }
       }
     });
+  }
+
+  async setFullscreen(fullscreen = false) {
+    if (fullscreen) {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        this.worldBounds.height = window.innerHeight;
+        this.worldBounds.width = window.innerWidth;
+        this.app.renderer.resize(this.worldBounds.width, this.worldBounds.height);
+      }
+    } else {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+        this.worldBounds.width = this.defaultWorldBounds.width;
+        this.worldBounds.height = this.defaultWorldBounds.height;
+        this.app.renderer.resize(this.worldBounds.width, this.worldBounds.height);
+      }
+    }
+  }
+
+  isFullscreen() {
+    return !!document.fullscreenElement;
+  }
+
+  async toggleFullscreen() {
+    await this.setFullscreen(!this.isFullscreen());
   }
 }
 

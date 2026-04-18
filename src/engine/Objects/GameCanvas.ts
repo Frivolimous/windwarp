@@ -2,6 +2,8 @@ import * as PIXI from "pixi.js";
 import { GameBlock, IGameBlock } from "./GameBlock";
 import { colorLuminance } from "../../JMGE/others/Colors";
 import { ILevelData, LevelLoader } from "../../services/LevelLoader";
+import { GameCamera } from "./GameCamera";
+import { Firework } from "../../JMGE/effects/Firework";
 
 export class GameCanvas extends PIXI.Container {
   public static BACKGROUND = 0;
@@ -24,11 +26,20 @@ export class GameCanvas extends PIXI.Container {
     new PIXI.Container(),
   ];
 
-  constructor(public boundWidth: number, public boundHeight: number, public baseScale: number = 1) {
+  public camera: GameCamera;
+
+  boundWidth: number;
+  boundHeight: number;
+
+  constructor(private worldBounds: PIXI.Rectangle, public baseScale: number = 1) {
     super();
     this.addChild(this.background, this.movingLayer, this.staticLayer);
     this.movingLayer.addChild(this.layers[GameCanvas.OBJECTS], this.layers[GameCanvas.PLAYER], this.layers[GameCanvas.EFFECTS]);
     this.staticLayer.addChild(this.layers[GameCanvas.UI]);
+
+    this.camera = new GameCamera(this, worldBounds.width, worldBounds.height);
+    this.boundWidth = worldBounds.width;
+    this.boundHeight = worldBounds.height;
 
     this.eventMode = 'dynamic';
   }
@@ -41,18 +52,8 @@ export class GameCanvas extends PIXI.Container {
     // consol
   }
 
-  resetBounds(width: number, height: number, bgColor: number) {
-    bgColor = 0x3366ff;
-    // let baseColor = new ColorObject(0x3366ff);
-    // // bgColor = 0x3366ff;
-    // let color = new ColorObject(bgColor);
-    // let hslBase = baseColor.toHSL();
-    // let hslColor = color.toHSL();
-    // console.log(hslBase, hslColor)
-    // hslBase[0] = hslColor[0] - 15;
-    // color.fromHSL(hslBase);
-
-    // bgColor = color.toNumber();
+  resetBounds(width: number, height: number, bgColor: number = null) {
+    bgColor = bgColor || 0x3366ff;
 
     this.background.clear();
 
@@ -68,6 +69,8 @@ export class GameCanvas extends PIXI.Container {
 
     this.boundWidth = width;
     this.boundHeight = height;
+
+    this.camera.updateBounds(this.worldBounds.width, this.worldBounds.height);
   }
 
   addConfig(data: ILevelData) {
@@ -131,5 +134,15 @@ export class GameCanvas extends PIXI.Container {
     try {
       this.layers[GameCanvas.PLAYER].removeChild(player);
     } catch (e) {}
+  }
+
+  addCenteredTextObject(textobj: PIXI.Text) {
+    textobj.anchor.set(0.5);
+    textobj.position.set(this.worldBounds.width / 2, this.worldBounds.height / 2);
+    this.layers[GameCanvas.UI].addChild(textobj);
+  }
+
+  addRandomExplosion() {
+      Firework.makeExplosion(this.layers[GameCanvas.UI], { x: Math.random() * this.worldBounds.width, y: Math.random() * this.worldBounds.height, tint: Math.random() * 0xffffff });
   }
 }

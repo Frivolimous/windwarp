@@ -12,17 +12,27 @@ export class MenuUI extends BaseUI {
   player2Avatar: SpriteButton;
   levelItems: LevelItem[] = [];
 
-  constructor(bounds: PIXI.Rectangle) {
+  constructor(private bounds: PIXI.Rectangle) {
     super();
+
+    this.drawMain();
+  }
+
+  drawMain() {
+    this.removeChildren();
+
     let background = new PIXI.Graphics();
-    background.rect(0, 0, bounds.width, bounds.height).fill(0x00ccff);
+    background.rect(0, 0, this.bounds.width, this.bounds.height).fill(0x00ccff);
     
     let title = new PIXI.Text({text: 'Level Up Speed Run: D.A.D.A.!', style: {fontSize: 50}});
     title.position.set(25, 50);
 
+    let fullScreenB = new Button({buttonLabel: 'Fullscreen', onClick: this.toggleFullscreen, color: 0x00ccff, width: 120, height: 30, labelStyle: {fontSize: 15 }});
+    fullScreenB.position.set(this.bounds.width - 140, 10);
+
     this.addChild(background, title);
 
-    this.addColumn("Dad's Levels:", [['Loopy', 0], ['Super Obby', 4], ['Hurdles', 9]/*, ['Quicksand', 11]*/], 100, 150, 10);
+    this.addColumn("Dad's Levels:", [['Loopy', 0], ['Super Obby', 4], ['Hurdles', 9]/*, ['Quicksand', 11]*/, ['Flatland', 12]], 100, 150, 10);
     this.addColumn("Pizza Rainbow Levels:", [['The Mountains', 1], ['Fall Secrets', 7], ['Escape Room', 8]], 375, 150, 10);
     this.addColumn("Electric Orb Levels:", [['Treasure Hunt', 2], ['Sky Base', 3], ['AOAO', 5], ['Secret Passage', 6], ['Level AW', 10]], 675, 150, 10);
 
@@ -42,6 +52,8 @@ export class MenuUI extends BaseUI {
     this.addChild(this.player1Avatar);
     this.addChild(this.player2Avatar);
     this.addChild(this.ghostB);
+    this.addChild(fullScreenB);
+
   }
 
   public addColumn(columnName: string, levelArray: [string, number][], centerX: number, top: number, gap: number) {
@@ -113,6 +125,11 @@ export class MenuUI extends BaseUI {
 
   public navOut = () => {
 
+  }
+
+  public toggleFullscreen = async () => {
+    await Facade.toggleFullscreen();
+    this.drawMain();
   }
 }
 
